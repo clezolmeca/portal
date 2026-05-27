@@ -22,7 +22,7 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
 const ADMIN_EMAILS = [
-  "CAMBIA_TU_CORREO@gmail.com"
+  "diegocabrera0226@gmail.com"
 ];
 
 const DB_REF   = doc(db,'clerecords','main');
@@ -386,11 +386,15 @@ select.sel:focus{border-color:var(--accent)}
       </div>
     </div>
     <div class="login-body">
-    <div class="login-err" id="login-err">Usuario o contraseña incorrectos</div>
+    
     <div id="login-cloud-hint" style="display:none;background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.2);color:var(--accent);border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:700;margin-bottom:12px">☁️ Conectado a la nube</div>
-    <div class="fg"><label class="fl">Usuario</label><input class="fi" id="login-user" placeholder="ej. Juan.pl" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()"></div>
-    <div class="fg" style="margin-top:10px"><label class="fl">Contraseña</label><input class="fi" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <button class="btn btn-dark" style="width:100%;margin-top:16px;justify-content:center;padding:10px" onclick="googleLogin()">Entrar con Google</button>
+    
+<div style="text-align:center;margin-top:10px;margin-bottom:16px;color:#64748b;font-size:13px;font-weight:700">
+Acceso protegido mediante cuenta Google autorizada
+</div>
+
+<button class="btn btn-dark"
+ style="width:100%;margin-top:16px;justify-content:center;padding:10px" onclick="googleLogin()">Entrar con Google</button>
     </div><!-- /login-body -->
   </div><!-- /login-box -->
 </div><!-- /login-overlay -->
