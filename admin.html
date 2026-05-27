@@ -31,6 +31,11 @@ const AUTH_REF = doc(db,'clerecords','auth');
 window._fbAuthObj = auth;
 window._fbProvider = provider;
 
+// Expose Firebase Auth methods globally for legacy inline onclick handlers
+window.signInWithPopup = signInWithPopup;
+window.signOut = signOut;
+
+
 onAuthStateChanged(auth, async(user)=>{
 
   const overlay = document.getElementById('login-overlay');
@@ -2235,12 +2240,13 @@ function exportGroupPDF(gid) {
   <div class="footer"><div class="firma">Firma del Maestro</div></div>
   <script>window.onload=()=>{window.print();}<\/script>
   
+
 <script>
 window.afterGoogleLogin = function(){};
 
 async function googleLogin(){
   try{
-    await signInWithPopup(
+    await window.signInWithPopup(
       window._fbAuthObj,
       window._fbProvider
     );
@@ -2252,7 +2258,7 @@ async function googleLogin(){
 
 async function doLogout(){
   try{
-    await signOut(window._fbAuthObj);
+    await window.signOut(window._fbAuthObj);
     location.reload();
   }catch(err){
     console.error(err);
@@ -2260,7 +2266,8 @@ async function doLogout(){
 }
 </script>
 
-</body></html>`;
+</body>
+</html>`;
   const win=window.open('','_blank','width=900,height=700');
   win.document.write(pdfHtml);
   win.document.close();
@@ -3161,12 +3168,13 @@ window.addEventListener('fb-ready', async () => {
 });
 </script>
 
+
 <script>
 window.afterGoogleLogin = function(){};
 
 async function googleLogin(){
   try{
-    await signInWithPopup(
+    await window.signInWithPopup(
       window._fbAuthObj,
       window._fbProvider
     );
@@ -3178,7 +3186,7 @@ async function googleLogin(){
 
 async function doLogout(){
   try{
-    await signOut(window._fbAuthObj);
+    await window.signOut(window._fbAuthObj);
     location.reload();
   }catch(err){
     console.error(err);
@@ -3187,4 +3195,5 @@ async function doLogout(){
 </script>
 
 </body>
+
 </html>
