@@ -1,0 +1,3186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLE Zona Olmeca</title>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const app = initializeApp({apiKey:"AIzaSyDvIW6y_hDrnLYxoYMlBSzmL5jtDblRIEM",authDomain:"cle-zolmeca.firebaseapp.com",projectId:"cle-zolmeca",storageBucket:"cle-zolmeca.firebasestorage.app",messagingSenderId:"632173812651",appId:"1:632173812651:web:ad03f7b067c68376c510ee"});
+const db = getFirestore(app);
+
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+const ADMIN_EMAILS = [
+  "CAMBIA_TU_CORREO@gmail.com"
+];
+
+const DB_REF   = doc(db,'clerecords','main');
+const AUTH_REF = doc(db,'clerecords','auth');
+
+window._fbAuthObj = auth;
+window._fbProvider = provider;
+
+onAuthStateChanged(auth, async(user)=>{
+
+  const overlay = document.getElementById('login-overlay');
+
+  if(!user){
+    if(overlay) overlay.style.display='flex';
+    return;
+  }
+
+  const allowed = ADMIN_EMAILS.includes(
+    (user.email || '').toLowerCase()
+  );
+
+  if(!allowed){
+    alert('Tu cuenta no tiene permisos para acceder.');
+    await signOut(auth);
+    return;
+  }
+
+  window.currentGoogleUser = user;
+
+  if(overlay){
+    overlay.style.display='none';
+  }
+
+  const hdr = document.getElementById('hdr-user-info');
+
+  if(hdr){
+    hdr.innerHTML = '🟢 ' + user.email;
+  }
+
+  if(window.afterGoogleLogin){
+    window.afterGoogleLogin(user);
+  }
+});
+
+window._fbDoc    = DB_REF;
+window._fbAuth   = AUTH_REF;
+window._fbSet    = (ref,data) => setDoc(ref,data,{merge:true});
+window._fbGet    = (ref) => getDoc(ref);
+window._fbListen = (ref,cb) => onSnapshot(ref,s=>{if(s.exists())cb(s.data());});
+window._fbReady  = true;
+window.dispatchEvent(new Event('fb-ready'));
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f4f6f9; --surface:#fff; --surface2:#eef1f5; --border:#dde2ea;
+  --accent:#1a2b6b; --accent2:#16a34a; --accent3:#2d6a4f;
+  --tecgold:#c9a227; --tecgreen:#2d6a4f;
+  --text:#0f172a; --muted:#64748b; --muted2:#94a3b8;
+  --danger:#dc2626; --warn:#d97706;
+  --font:'Nunito',sans-serif;
+  --shadow:0 1px 8px rgba(0,0,0,.07); --shadow-lg:0 8px 32px rgba(0,0,0,.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* HEADER */
+header{background:linear-gradient(135deg,#1a2b6b 0%,#22388a 100%);color:#fff;height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;position:sticky;top:0;z-index:200;gap:12px;border-bottom:3px solid #c9a227}
+.logo{display:flex;align-items:center;gap:12px;white-space:nowrap}
+.logo-emblem{width:44px;height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.logo-emblem svg{width:44px;height:44px}
+.logo-divider{width:1px;height:32px;background:rgba(255,255,255,.25);flex-shrink:0}
+.logo-brand{display:flex;flex-direction:column;line-height:1.2}
+.logo-inst{font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.65)}
+.logo-name{font-size:15px;font-weight:900;letter-spacing:.3px;color:#fff}
+.logo-name span{color:#e8bc2d}
+.logo-sub-text{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.hdr-btns{display:flex;gap:5px;flex-shrink:0}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:210px 1fr;min-height:calc(100vh - 64px)}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:2px}
+.nav-sec{font-size:10px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:1.2px;padding:10px 10px 4px;margin-top:2px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:700;transition:all .12s;user-select:none}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(26,43,107,.3)}
+.nav-item svg{width:15px;height:15px;flex-shrink:0}
+.nav-div{height:1px;background:var(--border);margin:6px 0}
+main{padding:24px 28px;overflow-y:auto;max-height:calc(100vh - 64px)}
+.page{display:none;animation:fadeIn .15s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+
+/* PAGE HEADER */
+.ph{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}
+.ph-title{font-size:22px;font-weight:900;letter-spacing:-.3px}
+.ph-sub{color:var(--muted);margin-top:2px;font-size:13px;font-weight:600}
+.ph-acts{display:flex;gap:7px;align-items:flex-start;flex-shrink:0}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 17px;position:relative;overflow:hidden;transition:box-shadow .15s,transform .15s}
+.stat-card.clickable{cursor:pointer}
+.stat-card.clickable:hover{box-shadow:var(--shadow-lg);transform:translateY(-1px)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card.c1::before{background:var(--accent)}
+.stat-card.c2::before{background:var(--accent2)}
+.stat-card.c3::before{background:var(--accent3)}
+.stat-card.c4::before{background:var(--warn)}
+.stat-lbl{font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.stat-val{font-size:28px;font-weight:900;margin-top:3px;letter-spacing:-1px}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:1px;font-weight:600}
+.stat-action{font-size:10.5px;font-weight:800;color:var(--accent);margin-top:8px;display:flex;align-items:center;gap:3px;opacity:.8}
+.stat-action:hover{opacity:1}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.card-hd{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.card-title{font-size:14px;font-weight:800}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:9px 14px;font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;background:var(--surface2);border-bottom:1px solid var(--border)}
+td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:13px;font-weight:600}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--surface2)}
+
+/* TOOLBAR */
+.toolbar{padding:10px 13px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.sw{display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;flex:1;min-width:160px;transition:border-color .12s}
+.sw:focus-within{border-color:var(--accent)}
+.sw input{background:none;border:none;outline:none;font-family:var(--font);font-size:13px;font-weight:600;color:var(--text);width:100%}
+.sw input::placeholder{color:var(--muted2);font-weight:500}
+.sw svg{width:14px;height:14px;color:var(--muted);flex-shrink:0}
+select.sel{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 9px;font-family:var(--font);font-size:13px;font-weight:600;outline:none;cursor:pointer}
+select.sel:focus{border-color:var(--accent)}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:8px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .12s;white-space:nowrap}
+.btn svg{width:13px;height:13px}
+.btn-dark{background:var(--text);color:#fff}
+.btn-dark:hover{background:#1e293b}
+.btn-blue{background:var(--accent);color:#fff}
+.btn-blue:hover{background:#1d4ed8}
+.btn-out{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-out:hover{background:var(--surface2)}
+.btn-ghost{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:12px;padding:6px 11px}
+.btn-ghost:hover{background:rgba(255,255,255,.2)}
+.btn-grn{background:var(--accent2);color:#fff}
+.btn-grn:hover{opacity:.9}
+.btn-del{background:rgba(220,38,38,.1);color:var(--danger);border:1px solid rgba(220,38,38,.2)}
+.btn-del:hover{background:rgba(220,38,38,.18)}
+.btn-warn{background:rgba(217,119,6,.1);color:var(--warn);border:1px solid rgba(217,119,6,.2)}
+.btn-warn:hover{background:rgba(217,119,6,.18)}
+.btn-sm{padding:4px 9px;font-size:12px}
+.btn-xs{padding:3px 7px;font-size:11.5px}
+.acts{display:flex;gap:4px}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11.5px;font-weight:700}
+.b-neu{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.b-grn{background:rgba(22,163,74,.1);color:var(--accent2)}
+.b-red{background:rgba(220,38,38,.1);color:var(--danger)}
+.b-blu{background:rgba(37,99,235,.1);color:var(--accent)}
+.b-pur{background:rgba(124,58,237,.1);color:var(--accent3)}
+.b-wrn{background:rgba(217,119,6,.1);color:var(--warn)}
+
+/* AVATAR */
+.av{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;font-weight:800;flex-shrink:0}
+.av-sm{width:30px;height:30px;font-size:11px}
+.av-lg{width:52px;height:52px;font-size:18px}
+.sc{display:flex;align-items:center;gap:9px}
+.sc-name{font-weight:700;font-size:13px}
+.sc-sub{font-size:11.5px;color:var(--muted);margin-top:1px;font-weight:500}
+
+/* PERIODS PAGE — all at once */
+.periods-section{margin-bottom:28px}
+.ps-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.ps-title{font-size:16px;font-weight:900}
+.ps-count{font-size:12px;color:var(--muted);font-weight:600;margin-left:8px}
+.periods-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.pc{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:all .15s}
+.pc:hover{border-color:var(--accent);box-shadow:var(--shadow)}
+.pc-top{padding:16px 16px 12px}
+.pc-name{font-size:19px;font-weight:900;letter-spacing:-.3px}
+.pc-date{font-size:11.5px;color:var(--muted);margin-top:2px;font-weight:600}
+.pc-meta{display:flex;gap:16px;margin-top:10px}
+.pc-sv{font-size:17px;font-weight:900}
+.pc-sl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.pc-btm{background:var(--surface2);padding:8px 16px;display:flex;gap:6px;border-top:1px solid var(--border)}
+
+/* GROUP CARDS */
+.groups-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.gc:hover{border-color:var(--accent);box-shadow:var(--shadow)}
+
+/* BC */
+.bc{display:flex;align-items:center;gap:6px;margin-bottom:16px;font-size:12.5px;color:var(--muted);flex-wrap:wrap;font-weight:600}
+.bc span{cursor:pointer;transition:color .12s}
+.bc span:hover{color:var(--text)}
+.bc span.cur{color:var(--text);font-weight:800;cursor:default}
+.bc .sep{color:var(--muted2)}
+
+/* SEARCH */
+.big-search-wrap{max-width:600px}
+.bsw{display:flex;align-items:center;gap:10px;background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:11px 15px;transition:border-color .15s;margin-bottom:14px}
+.bsw:focus-within{border-color:var(--accent)}
+.bsw input{background:none;border:none;outline:none;font-family:var(--font);font-size:18px;font-weight:700;color:var(--text);width:100%}
+.bsw input::placeholder{color:var(--muted2);font-weight:500}
+.bsw svg{color:var(--muted);width:20px;height:20px;flex-shrink:0}
+
+/* PROFILE */
+.profile-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px}
+.profile-top{display:flex;align-items:center;gap:15px;margin-bottom:16px}
+.profile-name{font-size:20px;font-weight:900}
+.profile-id{font-size:13px;color:var(--muted);margin-top:2px;font-weight:600}
+.profile-tags{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.hist-item{border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px}
+.hi-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.hi-period{font-weight:900;font-size:14px}
+.hi-group{font-size:12px;color:var(--muted);margin-top:2px;font-weight:600}
+.grade-display{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.gp{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 14px;text-align:center}
+.gp-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+.gp-val{font-size:20px;font-weight:900;margin-top:1px}
+
+/* EXTRA RECORDS (future) */
+
+/* ANALYTICS */
+.an-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:16px}
+.an-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 17px}
+.an-title{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px}
+.bar-row{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.bar-lbl{font-size:12px;font-weight:700;min-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:7px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .4s ease}
+.bar-n{font-size:11.5px;font-weight:700;color:var(--muted);min-width:20px;text-align:right}
+
+/* ENROLL */
+.enroll-list{max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:8px}
+.enroll-item{display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s}
+.enroll-item:last-child{border-bottom:none}
+.enroll-item:hover{background:var(--surface2)}
+.enroll-item.selected{background:rgba(22,163,74,.07)}
+.enroll-check{width:16px;height:16px;border-radius:4px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.enroll-item.selected .enroll-check{background:var(--accent2);border-color:var(--accent2)}
+.enroll-already{font-size:11.5px;color:var(--muted2);margin-left:auto;white-space:nowrap;font-weight:600}
+.disabled-enroll{opacity:.5;cursor:default !important;}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;z-index:999;opacity:0;pointer-events:none;transition:opacity .18s;backdrop-filter:blur(3px)}
+.overlay.open{opacity:1;pointer-events:all}
+.overlay.on-top{z-index:1099}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;width:500px;max-width:96vw;max-height:92vh;overflow-y:auto;transform:translateY(10px);transition:transform .18s;box-shadow:var(--shadow-lg)}
+.overlay.open .modal{transform:translateY(0)}
+.modal-lg{width:620px}
+.modal-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.modal-title{font-size:16px;font-weight:900}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--muted);border-radius:6px;padding:4px;transition:all .12s}
+.modal-close:hover{color:var(--text);background:var(--surface2)}
+
+/* FORM */
+.fg{margin-bottom:12px}
+.fl{display:block;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+.fi,.fs{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 11px;font-family:var(--font);font-size:13.5px;font-weight:600;outline:none;transition:border-color .12s}
+.fi:focus,.fs:focus{border-color:var(--accent);background:var(--surface)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.f-acts{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+
+/* ALERT */
+.alert{display:flex;align-items:center;gap:8px;padding:10px 13px;border-radius:8px;font-size:13px;margin-bottom:14px;font-weight:600}
+.alert-info{background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);color:var(--accent)}
+.alert svg{width:15px;height:15px;flex-shrink:0}
+
+/* TOAST */
+.toasts{position:fixed;bottom:18px;right:18px;display:flex;flex-direction:column;gap:6px;z-index:9999}
+.toast{background:var(--text);color:#fff;padding:10px 14px;border-radius:9px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px;animation:toastIn .22s ease;box-shadow:0 4px 16px rgba(0,0,0,.2);max-width:290px}
+.toast.err{background:var(--danger)}
+.toast svg{width:13px;height:13px;flex-shrink:0}
+@keyframes toastIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}
+
+/* IMPORT */
+.import-prev{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:6px}
+.import-prev table{width:100%;border-collapse:collapse}
+.import-prev th{padding:6px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);background:var(--surface2);border-bottom:1px solid var(--border)}
+.import-prev td{padding:6px 10px;font-size:12.5px;border-bottom:1px solid var(--border);font-weight:600}
+.import-prev tr:last-child td{border-bottom:none}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty svg{width:32px;height:32px;margin:0 auto 10px;opacity:.2;display:block}
+.empty p{font-size:13.5px;font-weight:700}
+.empty small{font-size:12px;opacity:.7;font-weight:500}
+
+.btn-warn{background:rgba(217,119,6,.12);color:var(--warn);border:1px solid rgba(217,119,6,.25)}
+.btn-warn:hover{background:rgba(217,119,6,.2)}
+/* PERIOD EXPLORER */
+.pe-layout{display:grid;grid-template-columns:220px 240px 1fr;gap:0;height:calc(100vh - 180px);min-height:400px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.pe-periods{border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.pe-groups{border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.pe-detail{overflow-y:auto;background:var(--bg)}
+.pe-col-title{font-size:10.5px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;padding:12px 14px 8px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:1}
+.pe-period-item{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s;gap:6px}
+.pe-period-item:hover{background:var(--surface2)}
+.pe-period-item.active{background:rgba(37,99,235,.08);border-left:3px solid var(--accent)}
+.pe-period-name{font-weight:700;font-size:13px;color:var(--text);flex:1}
+.pe-period-sub{font-size:11px;color:var(--muted);font-weight:500;margin-top:1px}
+.pe-period-acts{display:flex;gap:3px;opacity:0;transition:opacity .12s;flex-shrink:0}
+.pe-period-item:hover .pe-period-acts{opacity:1}
+.pe-period-item.active .pe-period-acts{opacity:1}
+.pe-group-item{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .12s}
+.pe-group-item:hover{background:var(--surface2)}
+.pe-group-item.active{background:rgba(37,99,235,.08);border-left:3px solid var(--accent)}
+.pe-group-name{font-weight:700;font-size:13px;color:var(--text)}
+.pe-group-sub{font-size:11px;color:var(--muted);font-weight:500;margin-top:1px}
+.pe-group-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0}
+.pe-empty{padding:28px 14px;text-align:center;color:var(--muted);font-size:13px;font-weight:600}
+.pe-detail-inner{padding:20px}
+.pe-detail-header{margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.pe-detail-name{font-size:20px;font-weight:900;color:var(--text);margin-bottom:2px}
+.pe-detail-meta{font-size:12.5px;color:var(--muted);font-weight:600}
+.pe-detail-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.pe-detail-stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center}
+.pe-detail-stat-val{font-size:22px;font-weight:900;color:var(--accent)}
+.pe-detail-stat-lbl{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.pe-detail-acts{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.pe-student-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.pe-student-row:last-child{border-bottom:none}
+.txt-meta{font-size:12px;color:var(--muted);font-weight:600}
+
+.login-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#1a2b6b 0%,#0f1a45 100%);display:none;align-items:center;justify-content:center;z-index:9999}
+.login-overlay::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");pointer-events:none}
+.login-box{background:#fff;border-radius:20px;padding:0;width:380px;max-width:95vw;box-shadow:0 24px 80px rgba(0,0,0,.5);overflow:hidden}
+.login-header{background:linear-gradient(135deg,#1a2b6b,#22388a);padding:28px 32px 24px;text-align:center;border-bottom:3px solid #c9a227}
+.login-logo{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px}
+.login-logo-icon{width:48px;height:48px}
+.login-logo-text{text-align:left}
+.login-inst{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.login-name{font-size:14px;font-weight:900;color:#fff;letter-spacing:.3px}
+.login-name span{color:#e8bc2d}
+.login-sub{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.5);margin-top:2px}
+.login-body{padding:28px 32px 32px}
+.login-err{background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);color:var(--danger);border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:700;margin-bottom:12px;display:none}
+</style>
+</head>
+<body>
+
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="login-header">
+      <div class="login-logo">
+        <div class="login-logo-icon" style="width:52px;height:52px;background:rgba(255,255,255,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#e8bc2d;border:1px solid rgba(255,255,255,.25)">CLE</div>
+        <div class="login-logo-text">
+          <div class="login-inst">Tecnológico Nacional de México</div>
+          <div class="login-name">IT <span>Zona Olmeca</span></div>
+          <div class="login-sub">Centro de Lenguas Extranjeras</div>
+        </div>
+      </div>
+    </div>
+    <div class="login-body">
+    <div class="login-err" id="login-err">Usuario o contraseña incorrectos</div>
+    <div id="login-cloud-hint" style="display:none;background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.2);color:var(--accent);border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:700;margin-bottom:12px">☁️ Conectado a la nube</div>
+    <div class="fg"><label class="fl">Usuario</label><input class="fi" id="login-user" placeholder="ej. Juan.pl" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()"></div>
+    <div class="fg" style="margin-top:10px"><label class="fl">Contraseña</label><input class="fi" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="btn btn-dark" style="width:100%;margin-top:16px;justify-content:center;padding:10px" onclick="googleLogin()">Entrar con Google</button>
+    </div><!-- /login-body -->
+  </div><!-- /login-box -->
+</div><!-- /login-overlay -->
+
+<header>
+  <div class="logo">
+    <div class="logo-emblem" style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#e8bc2d;letter-spacing:.5px;border:1px solid rgba(255,255,255,.2)">CLE</div>
+    <div class="logo-divider"></div>
+    <div class="logo-brand">
+      <div class="logo-inst">Tecnológico Nacional de México</div>
+      <div class="logo-name">Instituto Tecnológico <span>Zona Olmeca</span></div>
+      <div class="logo-sub-text">Centro de Lenguas Extranjeras</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#94a3b8;font-weight:700">
+    <span id="sync-indicator" style="display:none;font-size:11px;font-weight:700;transition:color .3s"></span>
+    <span id="hdr-user-info"></span>
+    <button class="btn btn-ghost" onclick="doLogout()">Salir</button></div>
+  <div class="hdr-btns" data-admin>
+    <button class="btn btn-ghost" onclick="openImportModal()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Importar Excel
+    </button>
+    <button class="btn btn-ghost" onclick="backupData()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+      Respaldo
+    </button>
+    <button class="btn btn-ghost" onclick="document.getElementById('restore-inp').click()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4 4l4-4m0 0l4 4m-4-4V4"/></svg>
+      Restaurar
+    </button>
+    <input type="file" id="restore-inp" accept=".json" style="display:none" onchange="restoreData(event)">
+  </div>
+</header>
+
+<div class="layout">
+<aside class="sidebar">
+  <span class="nav-sec">General</span>
+  <div class="nav-item" data-p="teacher-dashboard" onclick="nav(this,'teacher-dashboard')" style="display:none">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6"/></svg>
+    Mis Grupos
+  </div>
+  <div class="nav-item active" data-p="dashboard" onclick="nav(this,'dashboard')">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0h6"/></svg>
+    Dashboard
+  </div>
+  <div class="nav-item" data-p="roster" onclick="nav(this,'roster')">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    Base de Alumnos
+  </div>
+  <div class="nav-item" data-p="formation" onclick="nav(this,'formation')">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+    Grupos en Formación
+    <span id="formation-badge" style="display:none;background:#f59e0b;color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;margin-left:auto"></span>
+  </div>
+  <div class="nav-item" data-p="periods" onclick="nav(this,'periods')">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    Periodos y Grupos
+  </div>
+  <div class="nav-item" data-p="teachers" onclick="nav(this,'teachers')">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+    Maestros
+  </div>
+  <div class="nav-div"></div>
+  <div class="nav-item" data-p="grades" onclick="nav(this,'grades')">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    Calificaciones
+  </div>
+  <div class="nav-item" data-p="search" onclick="nav(this,'search')">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+    Buscar Alumno
+  </div>
+  <div class="nav-item" data-p="analytics" onclick="nav(this,'analytics')">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+    Analíticos
+  </div>
+  <div class="nav-item" data-p="report" onclick="nav(this,'report')">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+    Exportar
+  </div>
+</aside>
+
+<main>
+
+<!-- TEACHER DASHBOARD -->
+<div id="page-teacher-dashboard" class="page">
+  <div class="ph">
+    <div><div class="ph-title" id="td-title">Mis Grupos</div><div class="ph-sub" id="td-sub"></div></div>
+  </div>
+  <div id="td-content"></div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="page-dashboard" class="page active">
+  <div class="ph"><div><div class="ph-title">Dashboard</div><div class="ph-sub" id="dash-sub"></div></div></div>
+  <div id="dash-alert"></div>
+  <div class="stats-row" id="dash-stats"></div>
+  <div class="card">
+    <div class="card-hd"><span class="card-title">Alumnos recientes</span></div>
+    <table><thead><tr><th>Alumno</th><th>Matrícula</th><th>Periodo</th><th>Grupo</th><th>Carrera</th><th>Calificación</th></tr></thead>
+    <tbody id="dash-tbody"></tbody></table>
+  </div>
+</div>
+
+<!-- BASE DE ALUMNOS -->
+<div id="page-roster" class="page">
+  <div class="ph">
+    <div><div class="ph-title">Base de Alumnos</div><div class="ph-sub" id="roster-sub"></div></div>
+    <div class="ph-acts"><button class="btn btn-dark" onclick="openAddStudentModal()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Nuevo Alumno
+    </button></div>
+  </div>
+  <div class="card">
+    <div class="toolbar">
+      <div class="sw"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg><input id="roster-q" placeholder="Nombre o matrícula..." oninput="renderRoster()"></div>
+      <select class="sel" id="roster-career-f" onchange="renderRoster()"><option value="">Todas las carreras</option></select>
+      <select class="sel" id="roster-sex-f" onchange="renderRoster()"><option value="">Ambos sexos</option><option value="M">Hombre</option><option value="F">Mujer</option></select>
+    </div>
+    <table><thead><tr><th>Alumno</th><th>Matrícula</th><th>Sexo</th><th>Carrera</th><th>Nivel</th><th>Correo</th><th>Acciones</th></tr></thead>
+    <tbody id="roster-tbody"></tbody></table>
+  </div>
+</div>
+
+<!-- GRUPOS EN FORMACIÓN -->
+<div id="page-formation" class="page">
+  <div class="ph">
+    <div><div class="ph-title">Grupos en Formación</div><div class="ph-sub" id="formation-sub"></div></div>
+    <div class="ph-acts">
+      <button class="btn btn-out" onclick="openPortalSettings()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+        Portal
+      </button>
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+        Agregar Alumno
+      </button>
+      <button class="btn btn-out" onclick="openAddFormationGroupModal()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Nuevo Grupo
+      </button>
+      <button class="btn btn-dark" onclick="openAddFormationPeriodModal()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Nuevo Periodo
+      </button>
+    </div>
+  </div>
+  <div class="pe-layout">
+    <div class="pe-periods">
+      <div class="pe-col-title">Periodos</div>
+      <div id="fm-period-list"></div>
+    </div>
+    <div class="pe-groups">
+      <div class="pe-col-title" id="fm-groups-title">Grupos</div>
+      <div id="fm-group-list"></div>
+    </div>
+    <div class="pe-detail">
+      <div class="pe-col-title" id="fm-detail-title">Detalle</div>
+      <div id="fm-detail-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PERIODOS Y GRUPOS — explorador dos columnas -->
+<div id="page-periods" class="page">
+  <div class="ph">
+    <div><div class="ph-title">Periodos y Grupos</div><div class="ph-sub" id="periods-sub"></div></div>
+    <div class="ph-acts">
+      <button class="btn btn-out" onclick="openEnrollModal()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+        Inscribir Alumnos
+      </button>
+      <button class="btn btn-out" onclick="openAddGroupModal()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Nuevo Grupo
+      </button>
+      <button class="btn btn-dark" onclick="openModal('modal-period')">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Nuevo Periodo
+      </button>
+    </div>
+  </div>
+  <div class="pe-layout">
+    <!-- Columna izquierda: lista de periodos -->
+    <div class="pe-periods">
+      <div class="pe-col-title">Periodos</div>
+      <div id="pe-period-list"></div>
+    </div>
+    <!-- Columna central: grupos del periodo seleccionado -->
+    <div class="pe-groups">
+      <div class="pe-col-title" id="pe-groups-title">Grupos</div>
+      <div id="pe-group-list"></div>
+    </div>
+    <!-- Columna derecha: detalle del grupo seleccionado -->
+    <div class="pe-detail">
+      <div class="pe-col-title" id="pe-detail-title">Detalle</div>
+      <div id="pe-detail-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAESTROS -->
+<div id="page-teachers" class="page">
+  <div class="ph">
+    <div><div class="ph-title">Maestros</div><div class="ph-sub" id="teachers-sub"></div></div>
+    <div class="ph-acts"><button class="btn btn-dark" onclick="openAddTeacherModal()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Nuevo Maestro
+    </button></div>
+  </div>
+  <div class="card">
+    <div class="toolbar">
+      <div class="sw"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg><input id="teachers-q" placeholder="Nombre o materia..." oninput="renderTeachers()"></div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer"><input type="checkbox" id="teachers-show-archived" onchange="renderTeachers()"> Mostrar archivados</label>
+    </div>
+    <table><thead><tr><th>Nombre</th><th>Especialidad / Materia</th><th>Correo</th><th>Grupos activos</th><th>Acciones</th></tr></thead>
+    <tbody id="teachers-tbody"></tbody></table>
+  </div>
+
+  <!-- Usuarios — solo admin -->
+  <div data-admin style="margin-top:28px">
+    <div class="ps-header" style="margin-bottom:12px">
+      <span class="ps-title" style="font-size:16px;font-weight:900">Usuarios del Sistema</span>
+      <button class="btn btn-dark btn-sm" onclick="openAddUserModal()">+ Nuevo usuario</button>
+    </div>
+    <div class="card">
+      <table><thead><tr><th>Usuario</th><th>Rol</th><th>Maestro vinculado</th><th>Acciones</th></tr></thead>
+      <tbody id="users-tbody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+
+<div id="page-grades" class="page">
+  <div class="ph"><div><div class="ph-title">Calificaciones</div><div class="ph-sub" id="grades-sub"></div></div>
+    <div class="ph-acts">
+      <select class="sel" id="grades-period-f" onchange="renderGrades()"><option value="">Todos los periodos</option></select>
+    </div>
+  </div>
+  <div class="card">
+    <div class="toolbar">
+      <div class="sw"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg><input id="grades-q" placeholder="Nombre o matrícula..." oninput="renderGrades()"></div>
+      <select class="sel" id="grades-grp-f" onchange="renderGrades()"><option value="">Todos los grupos</option></select>
+    </div>
+    <table><thead><tr><th>Alumno</th><th>Periodo</th><th>Grupo</th><th>Maestro</th><th>Calificación Final</th><th>Estado</th><th>Acción</th></tr></thead>
+    <tbody id="grades-tbody"></tbody></table>
+  </div>
+</div>
+
+<!-- BUSCAR -->
+<div id="page-search" class="page">
+  <div class="ph"><div><div class="ph-title">Buscar Alumno</div><div class="ph-sub">Historial completo de cualquier alumno</div></div></div>
+  <div class="big-search-wrap">
+    <div class="bsw">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <input id="search-inp" placeholder="Nombre o matrícula..." oninput="doSearch()">
+    </div>
+    <div id="search-results"></div>
+  </div>
+</div>
+
+<!-- ANALÍTICOS -->
+<div id="page-analytics" class="page">
+  <div class="ph">
+    <div><div class="ph-title">Analíticos</div><div class="ph-sub">Estadísticas por periodo</div></div>
+    <div class="ph-acts"><select class="sel" id="an-period-sel" onchange="renderAnalytics()"></select></div>
+  </div>
+  <div id="an-content"></div>
+</div>
+
+<!-- EXPORTAR -->
+<div id="page-report" class="page">
+  <div class="ph">
+    <div><div class="ph-title">Exportar</div><div class="ph-sub">Reporte CSV</div></div>
+    <div class="ph-acts">
+      <select class="sel" id="report-period-sel" onchange="renderReport()"><option value="">Todos los periodos</option></select>
+      <button class="btn btn-dark" onclick="exportCSV()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        Descargar CSV
+      </button>
+    </div>
+  </div>
+  <div class="card">
+    <table><thead><tr><th>Matrícula</th><th>Nombre</th><th>Sexo</th><th>Carrera</th><th>Periodo</th><th>Grupo</th><th>Maestro</th><th>Calificación</th><th>Estado</th></tr></thead>
+    <tbody id="report-tbody"></tbody></table>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- MODALS -->
+
+<!-- Grupo en Formación -->
+<div class="overlay" id="modal-fg">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title" id="fg-modal-title">Nuevo Grupo</span><button class="modal-close" onclick="closeModal('modal-fg')"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+    <input type="hidden" id="fg-edit-id">
+    <input type="hidden" id="fg-period-id">
+    <div class="frow">
+      <div class="fg"><label class="fl">Nombre del grupo</label><input class="fi" id="fg-name" placeholder="Ej. Básico 1"></div>
+      <div class="fg"><label class="fl">Materia</label><input class="fi" id="fg-subject" placeholder="Ej. Inglés"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Maestro</label><select class="fs" id="fg-teacher-sel" onchange="onFgTeacherChange()"></select></div>
+      <div class="fg"><label class="fl">Horario</label><input class="fi" id="fg-schedule" placeholder="Ej. Lun-Mié 18:00-20:00"></div>
+    </div>
+    <div class="fg" id="fg-teacher-manual-wrap" style="display:none"><label class="fl">Nombre del maestro</label><input class="fi" id="fg-teacher-name" placeholder="Nombre completo"></div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Cupo máximo</label><input class="fi" id="fg-capacity" type="number" min="1" placeholder="Ej. 15"></div>
+      <div class="fg"><label class="fl">Nivel de inglés</label>
+        <select class="fs" id="fg-level">
+          <option value="">— Sin nivel específico —</option>
+          <option value="1">Nivel 1</option><option value="2">Nivel 2</option>
+          <option value="3">Nivel 3</option><option value="4">Nivel 4</option>
+          <option value="5">Nivel 5</option><option value="6">Nivel 6</option>
+          <option value="7">Nivel 7</option><option value="8">Nivel 8</option>
+          <option value="9">Nivel 9</option><option value="10">Nivel 10</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">URL referencia bancaria</label><input class="fi" id="fg-ref-url" placeholder="https://..."></div>
+    </div>
+    <div class="fg"><label class="fl">Descripción / instrucciones para el portal</label><textarea class="fi" id="fg-description" rows="2" placeholder="Información adicional visible para los alumnos..." style="resize:vertical"></textarea></div>
+<div class="fg"><label class="fl">Modalidad</label>
+        <select class="fs" id="fg-modality">
+          <option value="">— Sin especificar —</option>
+          <option value="presencial">🏫 Presencial</option>
+          <option value="hibrido">🔀 Híbrido</option>
+          <option value="virtual">💻 Virtual</option>
+        </select>
+      </div>
+    <div class="fg" style="flex-direction:row;align-items:center;gap:10px;margin-top:4px">
+      <input type="checkbox" id="fg-published" style="width:16px;height:16px;cursor:pointer">
+      <label for="fg-published" style="font-weight:700;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">🌐 Publicar en el portal de inscripciones</label>
+    </div>
+    <div class="f-acts">
+      <button class="btn btn-out" onclick="closeModal('modal-fg')">Cancelar</button>
+      <button class="btn btn-dark" onclick="saveFmGroup()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Portal settings -->
+<div class="overlay" id="modal-portal-settings">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title">Configuración del Portal</span><button class="modal-close" onclick="closeModal('modal-portal-settings')"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+    <div class="fg"><label class="fl">Título del portal</label><input class="fi" id="ps-title" placeholder="Ej. CLE Zolmeca — Inscripciones"></div>
+    <div class="fg"><label class="fl">Aviso / instrucciones generales</label><textarea class="fi" id="ps-notice" rows="4" placeholder="Instrucciones generales para los alumnos..." style="resize:vertical"></textarea></div>
+    <div class="fg"><label class="fl">URL referencia bancaria general (opcional)</label><input class="fi" id="ps-ref-url" placeholder="https://..."></div>
+    <div class="f-acts">
+      <button class="btn btn-out" onclick="closeModal('modal-portal-settings')">Cancelar</button>
+      <button class="btn btn-dark" onclick="savePortalSettings()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Inscribir en Formación -->
+<div class="overlay" id="modal-formation-enroll">
+  <div class="modal modal-lg">
+    <div class="modal-hd"><span class="modal-title">Agregar Alumno a Grupo en Formación</span><button class="modal-close" onclick="closeModal('modal-formation-enroll')"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+    <div class="frow" style="margin-bottom:12px">
+      <div class="fg" style="margin:0"><label class="fl">Grupo destino</label><select class="fs" id="fm-enroll-grp-sel"></select></div>
+      <div class="fg" style="margin:0"><label class="fl">Buscar alumno</label><input class="fi" id="fm-enroll-q" placeholder="Nombre o matrícula..." oninput="renderFormationEnrollList()"></div>
+    </div>
+    <div class="enroll-list" id="fm-enroll-list"></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:8px;font-weight:600" id="fm-enroll-count"></div>
+    <div class="f-acts">
+      <button class="btn btn-out" onclick="closeModal('modal-formation-enroll')">Cancelar</button>
+      <button class="btn btn-grn" onclick="confirmFormationEnroll()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        Agregar seleccionados
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Periodo -->
+<div class="overlay" id="modal-period">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title" id="modal-period-title">Nuevo Periodo</span><button class="modal-close" onclick="closeModal('modal-period')"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+    <input type="hidden" id="p-edit-id">
+    <div class="fg"><label class="fl">Nombre del periodo</label><input class="fi" id="p-name" placeholder="Ej. 2025-1"></div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Fecha inicio</label><input class="fi" id="p-start" type="date"></div>
+      <div class="fg"><label class="fl">Fecha fin</label><input class="fi" id="p-end" type="date"></div>
+    </div>
+    <div class="f-acts">
+      <button class="btn btn-out" onclick="closeModal('modal-period')">Cancelar</button>
+      <button class="btn btn-dark" onclick="savePeriod()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Grupo -->
+<div class="overlay" id="modal-group">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title" id="modal-group-title">Nuevo Grupo</span><button class="modal-close" onclick="closeModal('modal-group')"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+    <input type="hidden" id="g-edit-id">
+    <div class="fg"><label class="fl">Periodo</label><select class="fs" id="g-period-sel"></select></div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Nombre del grupo</label><input class="fi" id="g-name" placeholder="Ej. Grupo A"></div>
+      <div class="fg"><label class="fl">Maestro responsable</label><select class="fs" id="g-teacher-sel" onchange="populateTeacherSel(this.value)"></select></div>
+    </div>
+    <div class="fg" id="g-teacher-manual-wrap" style="display:none"><label class="fl">Nombre del maestro</label><input class="fi" id="g-teacher" placeholder="Escribe el nombre del maestro"></div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Materia</label><input class="fi" id="g-subject" placeholder="Ej. Inglés B2"></div>
+      <div class="fg"><label class="fl">Nivel de inglés</label>
+        <select class="fs" id="g-level">
+          <option value="">— Sin nivel —</option>
+          <option value="1">Nivel 1</option><option value="2">Nivel 2</option>
+          <option value="3">Nivel 3</option><option value="4">Nivel 4</option>
+          <option value="5">Nivel 5</option><option value="6">Nivel 6</option>
+          <option value="7">Nivel 7</option><option value="8">Nivel 8</option>
+          <option value="9">Nivel 9</option><option value="10">Nivel 10</option>
+        </select>
+      </div>
+    </div>
+<div class="fg"><label class="fl">Modalidad</label>
+        <select class="fs" id="g-modality">
+          <option value="">— Sin especificar —</option>
+          <option value="presencial">🏫 Presencial</option>
+          <option value="hibrido">🔀 Híbrido</option>
+          <option value="virtual">💻 Virtual</option>
+        </select>
+      </div>
+    <div class="f-acts">
+      <button class="btn btn-out" onclick="closeModal('modal-group')">Cancelar</button>
+      <button class="btn btn-dark" onclick="saveGroup()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Alumno -->
+<div class="overlay" id="modal-student">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title" id="modal-student-title">Nuevo Alumno</span><button class="modal-close" onclick="closeModal('modal-student')"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+    <input type="hidden" id="s-edit-id">
+    <div class="frow">
+      <div class="fg"><label class="fl">Nombre(s)</label><input class="fi" id="s-nombre" placeholder="Nombre(s)"></div>
+      <div class="fg"><label class="fl">Apellido Paterno</label><input class="fi" id="s-ap" placeholder="Apellido paterno"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Apellido Materno</label><input class="fi" id="s-am" placeholder="Apellido materno"></div>
+      <div class="fg"><label class="fl">N. de Control</label><input class="fi" id="s-mat" placeholder="Ej. 2024001"></div>
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Carrera y Modalidad</label><input class="fi" id="s-career" placeholder="Ej. ISC Escolarizado" list="careers-dl"></div>
+      <div class="fg"><label class="fl">Sexo</label><select class="fs" id="s-sex"><option value="M">Hombre</option><option value="F">Mujer</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">Correo Institucional</label><input class="fi" id="s-email" placeholder="correo@instituto.edu.mx"></div>
+    <datalist id="careers-dl"></datalist>
+    <div class="f-acts">
+      <button class="btn btn-out" onclick="closeModal('modal-student')">Cancelar</button>
+      <button class="btn btn-dark" onclick="saveStudent()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Inscribir Alumnos -->
+<div class="overlay" id="modal-enroll">
+  <div class="modal modal-lg">
+    <div class="modal-hd"><span class="modal-title">Inscribir Alumnos</span><button class="modal-close" onclick="closeModal('modal-enroll')"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+    <div class="frow" style="margin-bottom:12px">
+      <div class="fg" style="margin:0"><label class="fl">Grupo destino</label><select class="fs" id="enroll-grp-sel"></select></div>
+      <div class="fg" style="margin:0"><label class="fl">Buscar alumno</label><input class="fi" id="enroll-q" placeholder="Nombre o matrícula..." oninput="renderEnrollList()"></div>
+    </div>
+    <div class="enroll-list" id="enroll-list"></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:8px;font-weight:600" id="enroll-count"></div>
+    <div class="f-acts">
+      <button class="btn btn-out" onclick="closeModal('modal-enroll')">Cancelar</button>
+      <button class="btn btn-grn" onclick="confirmEnroll()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        Inscribir seleccionados
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Calificación Final -->
+<div class="overlay" id="modal-grades">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title" id="modal-grades-title">Calificación Final</span><button class="modal-close" onclick="closeModal('modal-grades')"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+    <input type="hidden" id="grd-sid"><input type="hidden" id="grd-pid"><input type="hidden" id="grd-gid">
+    <div class="fg"><label class="fl">Calificación Final (0–100)</label><input class="fi" id="grd-final" type="number" min="0" max="100" step="1" placeholder="Ej. 85" style="font-size:22px;font-weight:900;text-align:center;padding:14px"></div>
+    <div class="f-acts">
+      <button class="btn btn-out" onclick="closeModal('modal-grades')">Cancelar</button>
+      <button class="btn btn-dark" onclick="saveGrades()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Usuario -->
+<div class="overlay" id="modal-user">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title" id="modal-user-title">Nuevo Usuario</span><button class="modal-close" onclick="closeModal('modal-user')"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+    <input type="hidden" id="u-edit-username">
+    <div class="frow">
+      <div class="fg"><label class="fl">Nombre de usuario</label><input class="fi" id="u-username" placeholder="ej. Juan.pl"></div>
+      <div class="fg"><label class="fl">Rol</label><select class="fs" id="u-role" onchange="toggleUserTeacher()"><option value="teacher">Maestro</option><option value="admin">Administrador</option></select></div>
+    </div>
+    <div class="fg" id="u-teacher-wrap"><label class="fl">Vincular a maestro</label><select class="fs" id="u-teacher-link"><option value="">— Sin vincular —</option></select></div>
+    <div class="fg"><label class="fl">Contraseña <span id="u-pass-hint" style="font-weight:500;text-transform:none;color:var(--muted)">(dejar vacío para no cambiar)</span></label><input class="fi" id="u-pass" type="password" placeholder="Nueva contraseña"></div>
+    <div class="f-acts">
+      <button class="btn btn-out" onclick="closeModal('modal-user')">Cancelar</button>
+      <button class="btn btn-dark" onclick="saveUser()">Guardar</button>
+    </div>
+  </div>
+</div>
+<!-- Maestro -->
+<div class="overlay" id="modal-teacher">
+  <div class="modal">
+    <div class="modal-hd"><span class="modal-title" id="modal-teacher-title">Nuevo Maestro</span><button class="modal-close" onclick="closeModal('modal-teacher')"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+    <input type="hidden" id="t-edit-id">
+    <div class="frow">
+      <div class="fg"><label class="fl">Nombre completo</label><input class="fi" id="t-name" placeholder="Nombre del maestro"></div>
+      <div class="fg"><label class="fl">Especialidad / Materia</label><input class="fi" id="t-subject" placeholder="Ej. Inglés, Matemáticas"></div>
+    </div>
+    <div class="fg"><label class="fl">Correo</label><input class="fi" id="t-email" placeholder="correo@instituto.edu.mx"></div>
+    <div class="fg"><label class="fl">Notas</label><input class="fi" id="t-notes" placeholder="Información adicional (opcional)"></div>
+    <div class="f-acts">
+      <button class="btn btn-out" onclick="closeModal('modal-teacher')">Cancelar</button>
+      <button class="btn btn-dark" onclick="saveTeacher()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Calificaciones del Alumno -->
+<div class="overlay" id="modal-student-grades">
+  <div class="modal modal-lg">
+    <div class="modal-hd"><span class="modal-title" id="modal-sg-title">Historial de Calificaciones</span><button class="modal-close" onclick="closeModal('modal-student-grades')"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+    <div id="modal-sg-content"></div>
+    <div class="f-acts"><button class="btn btn-out" onclick="closeModal('modal-student-grades')">Cerrar</button></div>
+  </div>
+</div>
+
+<!-- Estatus Académico -->
+<div class="overlay" id="modal-academic-status">
+  <div class="modal" style="max-width:700px;width:100%">
+    <div class="modal-hd"><span class="modal-title" id="as-title">Estatus Académico</span><button class="modal-close" onclick="closeModal('modal-academic-status')"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+    <input type="hidden" id="as-student-id">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:8px">
+
+      <!-- Examen de colocación -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px">
+        <div style="font-weight:800;font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">📝 Examen de Colocación</div>
+        <div class="fg"><label class="fl">Nivel asignado</label>
+          <select class="fs" id="as-placement-level">
+            <option value="">— No aplicado —</option>
+            <option value="1">Nivel 1</option><option value="2">Nivel 2</option><option value="3">Nivel 3</option>
+            <option value="4">Nivel 4</option><option value="5">Nivel 5</option><option value="6">Nivel 6</option>
+            <option value="7">Nivel 7</option><option value="8">Nivel 8</option><option value="9">Nivel 9</option>
+            <option value="10">Nivel 10</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Fecha</label><input class="fi" id="as-placement-date" type="date"></div>
+        <div class="fg"><label class="fl">Notas</label><textarea class="fi" id="as-placement-notes" rows="2" style="resize:vertical" placeholder="Observaciones..."></textarea></div>
+      </div>
+
+      <!-- Lengua materna -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px">
+        <div style="font-weight:800;font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">🌍 Liberación por Lengua Materna</div>
+        <div class="fg" style="flex-direction:row;align-items:center;gap:8px;margin-bottom:10px">
+          <input type="checkbox" id="as-native-lang" style="width:16px;height:16px;cursor:pointer">
+          <label for="as-native-lang" style="font-weight:700;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Liberado por lengua materna</label>
+        </div>
+        <div class="fg"><label class="fl">Lengua</label><input class="fi" id="as-native-lang-name" placeholder="Ej. Alemán, Francés..."></div>
+        <div class="fg"><label class="fl">Fecha</label><input class="fi" id="as-native-lang-date" type="date"></div>
+        <div class="fg"><label class="fl">Notas</label><textarea class="fi" id="as-native-lang-notes" rows="2" style="resize:vertical" placeholder="Observaciones..."></textarea></div>
+      </div>
+
+      <!-- Certificación -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px">
+        <div style="font-weight:800;font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">🏆 Certificación de Inglés</div>
+        <div class="fg" style="flex-direction:row;align-items:center;gap:8px;margin-bottom:10px">
+          <input type="checkbox" id="as-cert" style="width:16px;height:16px;cursor:pointer">
+          <label for="as-cert" style="font-weight:700;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Certificación válida</label>
+        </div>
+        <div class="fg"><label class="fl">Tipo / institución</label><input class="fi" id="as-cert-type" placeholder="Ej. TOEFL, Cambridge..."></div>
+        <div class="fg"><label class="fl">Fecha</label><input class="fi" id="as-cert-date" type="date"></div>
+        <div class="fg"><label class="fl">Notas</label><textarea class="fi" id="as-cert-notes" rows="2" style="resize:vertical" placeholder="Observaciones..."></textarea></div>
+      </div>
+
+      <!-- Intensivo -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px">
+        <div style="font-weight:800;font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">⚡ Curso Intensivo</div>
+        <div class="fg" style="flex-direction:row;align-items:center;gap:8px;margin-bottom:10px">
+          <input type="checkbox" id="as-intensive" style="width:16px;height:16px;cursor:pointer">
+          <label for="as-intensive" style="font-weight:700;font-size:13px;cursor:pointer;text-transform:none;letter-spacing:0;color:var(--text)">Inscrito en intensivo</label>
+        </div>
+        <div class="fg"><label class="fl">Periodo</label><input class="fi" id="as-intensive-period" placeholder="Ej. Verano 2025"></div>
+        <div class="fg"><label class="fl">Nivel</label>
+          <select class="fs" id="as-intensive-level">
+            <option value="">—</option>
+            <option value="1">Nivel 1</option><option value="2">Nivel 2</option><option value="3">Nivel 3</option>
+            <option value="4">Nivel 4</option><option value="5">Nivel 5</option><option value="6">Nivel 6</option>
+            <option value="7">Nivel 7</option><option value="8">Nivel 8</option><option value="9">Nivel 9</option>
+            <option value="10">Nivel 10</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Notas</label><textarea class="fi" id="as-intensive-notes" rows="2" style="resize:vertical" placeholder="Observaciones..."></textarea></div>
+      </div>
+    </div>
+    <div class="f-acts">
+      <button class="btn btn-out" onclick="closeModal('modal-academic-status')">Cancelar</button>
+      <button class="btn btn-dark" onclick="saveAcademicStatus()">Guardar</button>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="modal-group-roster">
+  <div class="modal modal-lg">
+    <div class="modal-hd">
+      <span class="modal-title" id="modal-roster-title">Lista del Grupo</span>
+      <button class="modal-close" onclick="closeModal('modal-group-roster')"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+    </div>
+    <div id="modal-roster-meta" style="font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:14px"></div>
+    <div class="enroll-list" id="modal-roster-list" style="max-height:420px"></div>
+    <div class="f-acts" style="margin-top:12px">
+      <button class="btn btn-out" onclick="closeModal('modal-group-roster')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Importar Excel -->
+<div class="overlay" id="modal-import">
+  <div class="modal modal-lg">
+    <div class="modal-hd"><span class="modal-title">Importar desde Excel</span><button class="modal-close" onclick="closeModal('modal-import')"><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+    <div class="alert alert-info" style="margin-bottom:12px">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <span>En Excel: <strong>Archivo → Guardar como → CSV UTF-8</strong>. Columnas reconocidas: <em>N. DE CONTROL, NOMBRE, AP, AM, SEXO, CARRERA Y MODALIDAD, CORREO INSTITUCIONAL</em></span>
+    </div>
+    <div class="fg"><label class="fl">Archivo CSV</label><input type="file" id="import-file" accept=".csv,.txt" class="fi" style="padding:6px" onchange="previewImport(event)"></div>
+    <div id="import-preview"></div>
+    <div class="f-acts">
+      <button class="btn btn-out" onclick="closeModal('modal-import')">Cancelar</button>
+      <button class="btn btn-dark" id="btn-do-import" style="display:none" onclick="confirmImport()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        Importar a la base
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+// ============================================================
+// AUTH  (users stored in Firestore + localStorage cache)
+// ============================================================
+const AUTH_KEY = 'clerecords_auth';
+let currentUser = null; // {username, role, teacherId}
+
+function generateUsername(name) {
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0] || '';
+  const initials = parts.slice(1).map(p=>p[0]||'').join('').toLowerCase();
+  return first + (initials ? '.' + initials : '');
+}
+
+function hashPass(pass) {
+  let h = 0;
+  for (let i = 0; i < pass.length; i++) { h = Math.imul(31, h) + pass.charCodeAt(i) | 0; }
+  return h.toString(36);
+}
+
+function loadAuth() {
+  try { const s=localStorage.getItem(AUTH_KEY); if(s) return JSON.parse(s); } catch(e) {}
+  return { users: [] };
+}
+function saveAuth(auth) {
+  try { localStorage.setItem(AUTH_KEY, JSON.stringify(auth)); } catch(e) {}
+  // Persist to Firestore if available
+  if (window._fbReady && window._fbAuth) {
+    window._fbSet(window._fbAuth, {users: auth.users}).catch(e=>console.warn('Auth sync error:',e));
+  }
+}
+
+// Sync auth from Firestore on startup
+async function syncAuthFromCloud() {
+  if (!window._fbReady) return;
+  try {
+    const snap = await window._fbGet(window._fbAuth);
+    if (snap.exists() && snap.data().users?.length) {
+      const cloudAuth = snap.data();
+      saveAuth(cloudAuth); // update local cache
+      return cloudAuth;
+    }
+  } catch(e) { console.warn('Cloud auth fetch failed:', e); }
+  return loadAuth();
+}
+
+async function doLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const err  = document.getElementById('login-err');
+  const btn  = document.querySelector('#login-overlay button');
+  err.style.display = 'none';
+  if (!user || !pass) { err.textContent='Ingresa usuario y contraseña'; err.style.display='block'; return; }
+  if (btn) { btn.textContent = 'Verificando...'; btn.disabled = true; }
+  let auth;
+  try { auth = await syncAuthFromCloud(); } catch(e) { auth = loadAuth(); }
+  if (!auth.users.length) {
+    auth.users.push({username:'admin',passHash:hashPass('admin123'),role:'admin',teacherId:null});
+    saveAuth(auth);
+  }
+  if (btn) { btn.textContent = 'Entrar'; btn.disabled = false; }
+  const found = auth.users.find(u => u.username.toLowerCase()===user.toLowerCase() && u.passHash===hashPass(pass));
+  if (!found) { err.textContent='Usuario o contraseña incorrectos'; err.style.display='block'; document.getElementById('login-pass').value=''; return; }
+  currentUser = found;
+  try { sessionStorage.setItem('cle_session', JSON.stringify(found)); } catch(e) {}
+  document.getElementById('login-overlay').style.display = 'none';
+  await loadDbFromCloud();
+  applyRoleUI();
+  if (isAdmin()) renderDashboard();
+  else {
+    const tdNav = document.querySelector('.nav-item[data-p="teacher-dashboard"]');
+    if (tdNav) nav(tdNav, 'teacher-dashboard'); else renderDashboard();
+  }
+}
+
+function isAdmin() { return currentUser?.role === 'admin'; }
+
+function doLogout() {
+  if (!confirm('¿Cerrar sesión?')) return;
+  currentUser = null;
+  try { sessionStorage.removeItem('cle_session'); } catch(e) {}
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-err').style.display = 'none';
+  document.getElementById('hdr-user-info').textContent = '';
+  const si = document.getElementById('sync-indicator');
+  if (si) si.style.display = 'none';
+  document.getElementById('login-overlay').style.display = 'flex';
+}
+
+function applyRoleUI() {
+  document.getElementById('hdr-user-info').textContent = currentUser?.username || '';
+  const si = document.getElementById('sync-indicator');
+  if (si) si.style.display = '';
+  if (isAdmin()) {
+    document.body.classList.add('is-admin');
+    document.querySelectorAll('.nav-item').forEach(el => el.style.display = '');
+  } else {
+    document.body.classList.remove('is-admin');
+    // Teachers only see their dashboard and grades
+    ['roster','periods','teachers','analytics','report','formation','search','dashboard'].forEach(p => {
+      const item = document.querySelector('.nav-item[data-p="'+p+'"]');
+      if (item) item.style.display = 'none';
+    });
+    // Show teacher dashboard nav item
+    const tdItem = document.querySelector('.nav-item[data-p="teacher-dashboard"]');
+    if (tdItem) tdItem.style.display = '';
+  }
+  document.querySelectorAll('[data-admin]').forEach(el => {
+    el.style.display = isAdmin() ? '' : 'none';
+  });
+}
+
+function requireAdmin(fn) {
+  if (!isAdmin()) { toast('Acción solo disponible para administradores','err'); return; }
+  fn();
+}
+
+// ── LOCK (candado) — admin only ────────────────────────────────────────
+function isGroupLocked(gid) {
+  const g = getGroup(gid);
+  return g?.locked === true;
+}
+function toggleGroupLock(gid) {
+  if (!isAdmin()) { toast('Solo el administrador puede bloquear grupos','err'); return; }
+  const g = getGroup(gid);
+  if (!g) return;
+  g.locked = !g.locked;
+  saveDb();
+  toast(g.locked ? '🔒 Grupo bloqueado — calificaciones congeladas' : '🔓 Grupo desbloqueado');
+  renderGroupDetail();
+  renderGroupList();
+}
+
+// ============================================================
+// DATA MODEL
+// students    → {id, nombre, ap, am, matricula, career, sex, email}
+// periods     → {id, name, start, end}
+// teachers    → {id, name, subject, email, notes, archived}
+// groups      → {id, periodId, name, teacherId, teacher, subject, locked}
+// enrollments → {studentId, groupId, periodId}
+// grades      → {studentId, periodId, groupId, final}
+// extras      → {id, studentId, periodId, type, score, date, notes}
+
+const SK = 'clerecords_v1';
+let _isSyncing = false; // prevent echo from cloud listener
+
+function loadDb() {
+  try { const s = localStorage.getItem(SK); if (s) return JSON.parse(s); } catch(e) {}
+  return { students:[], periods:[], groups:[], enrollments:[], grades:[], extras:[], teachers:[] };
+}
+
+// Cloud sync ──────────────────────────────────────────────────
+async function loadDbFromCloud() {
+  if (!window._fbReady) { startRealtimeListener(); return; }
+  setSyncStatus('syncing');
+  try {
+    const snap = await window._fbGet(window._fbDoc);
+    if (snap.exists()) {
+      const data = snap.data();
+      if (data.db) {
+        _isSyncing = true;
+        db = data.db;
+        if (!db.teachers) db.teachers = [];
+        initFormationDb();
+        localStorage.setItem(SK, JSON.stringify(db));
+        _isSyncing = false;
+      }
+    } else {
+      // First time — push local data to cloud
+      await pushDbToCloud();
+    }
+    setSyncStatus('ok');
+  } catch(e) {
+    console.warn('Cloud load failed, using local:', e);
+    setSyncStatus('offline');
+  }
+  startRealtimeListener();
+}
+
+async function pushDbToCloud() {
+  if (!window._fbReady || _isSyncing) return;
+  try {
+    await window._fbSet(window._fbDoc, { db, updatedBy: currentUser?.username, updatedAt: Date.now() });
+    setSyncStatus('ok');
+  } catch(e) {
+    console.warn('Cloud push failed:', e);
+    setSyncStatus('offline');
+  }
+}
+
+function startRealtimeListener() {
+  if (!window._fbReady) return;
+  if (window._fbUnsubscribe) window._fbUnsubscribe();
+  window._fbUnsubscribe = window._fbListen(window._fbDoc, data => {
+    if (!data.db || _isSyncing) return;
+    // Another user made changes — merge into local db
+    _isSyncing = true;
+    db = data.db;
+    if (!db.teachers) db.teachers = [];
+    initFormationDb();
+    localStorage.setItem(SK, JSON.stringify(db));
+    _isSyncing = false;
+    setSyncStatus('ok');
+    // Refresh current page silently
+    const activePage = document.querySelector('.nav-item.active')?.dataset?.p;
+    if (activePage) ({dashboard:renderDashboard, roster:renderRoster, periods:renderPeriods,
+      grades:renderGrades, analytics:renderAnalytics, report:renderReport,
+      teachers:renderTeachers, formation:renderFormation, search:()=>{}})[activePage]?.();
+    showCloudToast();
+  });
+}
+
+let _cloudToastTimer;
+function showCloudToast() {
+  clearTimeout(_cloudToastTimer);
+  _cloudToastTimer = setTimeout(() => toast('☁️ Datos actualizados desde la nube'), 300);
+}
+
+function setSyncStatus(state) {
+  const el = document.getElementById('sync-indicator');
+  if (!el) return;
+  const map = {
+    syncing: {text:'⟳ Sincronizando...', color:'var(--warn)'},
+    ok:      {text:'☁ Sincronizado',     color:'var(--accent2)'},
+    offline: {text:'○ Sin conexión',     color:'var(--muted)'}
+  };
+  const s = map[state] || map.offline;
+  el.textContent = s.text;
+  el.style.color = s.color;
+}
+
+// ── saveDb: local + cloud ─────────────────────────────────────
+let _saveTimer = null;
+function saveDb() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => saveDbNow(), 80);
+}
+function saveDbNow() {
+  try { localStorage.setItem(SK, JSON.stringify(db)); } catch(e) {
+    toast('⚠️ Almacenamiento local lleno.','err');
+  }
+  pushDbToCloud();
+}
+
+let db = loadDb();
+if (!db.teachers) db.teachers = [];
+initFormationDb();
+
+// helpers
+const uid = () => Math.random().toString(36).slice(2,10);
+function modalityBadge(m) {
+  const map={presencial:'🏫 Presencial',hibrido:'🔀 Híbrido',virtual:'💻 Virtual'};
+  if (!m||!map[m]) return '';
+  return '<span class="badge b-neu" style="font-size:11px">'+map[m]+'</span>';
+}
+const COLORS = ['#2563eb','#16a34a','#7c3aed','#d97706','#dc2626','#0891b2','#db2777'];
+const avCol = n => COLORS[n.charCodeAt(0) % COLORS.length];
+const inits = n => n.trim().split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const fullName = s => [s.ap, s.am, s.nombre].filter(Boolean).join(' ');
+
+const getFinal = (sid, pid, gid) => {
+  // If gid provided, look for grade specific to that group enrollment
+  if (gid) {
+    const g = db.grades.find(g=>g.studentId===sid&&g.periodId===pid&&g.groupId===gid);
+    if (g) return g.final;
+  }
+  // Fallback: any grade for this student+period (backwards compat)
+  const g = db.grades.find(g=>g.studentId===sid&&g.periodId===pid&&!g.groupId);
+  if (g) return g.final;
+  const g2 = db.grades.find(g=>g.studentId===sid&&g.periodId===pid);
+  return g2 ? g2.final : null;
+};
+const gbadge = v => {
+  if (v===null||v===undefined) return '<span style="color:var(--muted)">—</span>';
+  const n=parseFloat(v);
+  const c=n>=90?'b-grn':n>=80?'b-blu':n>=70?'b-pur':n>=60?'b-wrn':'b-red';
+  return '<span class="badge '+c+'">'+v+'</span>';
+};
+const sbadge = v => (v===null||v===undefined) ? '<span class="badge b-neu">Sin calif.</span>'
+  : parseFloat(v)>=70 ? '<span class="badge b-grn">Aprobado</span>' : '<span class="badge b-red">Reprobado</span>';
+
+const getPeriod  = id => db.periods.find(p=>p.id===id);
+const getGroup   = id => db.groups.find(g=>g.id===id);
+const getStudent = id => db.students.find(s=>s.id===id);
+const getTeacher = id => db.teachers.find(t=>t.id===id);
+const getEnroll      = (sid,pid) => db.enrollments.find(e=>e.studentId===sid&&e.periodId===pid);
+const getEnrollGroup = (sid,gid) => db.enrollments.find(e=>e.studentId===sid&&e.groupId===gid);
+const studentEnrolls = sid => db.enrollments.filter(e=>e.studentId===sid);
+const periodGroups  = pid => db.groups.filter(g=>g.periodId===pid);
+const periodEnrolls = pid => db.enrollments.filter(e=>e.periodId===pid);
+const groupEnrolls  = gid => db.enrollments.filter(e=>e.groupId===gid);
+const allEnrolls    = () => db.enrollments;
+
+// navigation
+function nav(el, page) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  el.classList.add('active');
+  ({dashboard:renderDashboard, roster:renderRoster, periods:renderPeriods,
+    grades:renderGrades, analytics:renderAnalytics, report:renderReport, search:()=>{},
+    teachers:renderTeachers, formation:renderFormation,
+    'teacher-dashboard':renderTeacherDashboard})[page]?.();
+}
+
+// DASHBOARD
+function renderDashboard() {
+  const alertEl=document.getElementById('dash-alert');
+  const totalStudents=db.students.length;
+  const totalEnrolls=db.enrollments.length;
+  const allGrades=db.grades.map(g=>parseFloat(g.final)).filter(n=>!isNaN(n));
+  const globalAvg=allGrades.length?(allGrades.reduce((a,b)=>a+b,0)/allGrades.length).toFixed(1):'—';
+  const approved=db.grades.filter(g=>g.final!==null&&parseFloat(g.final)>=70).length;
+  if (!totalStudents) {
+    alertEl.innerHTML='<div class="alert alert-info"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Empieza importando tu base de alumnos desde Excel o agrega uno manualmente.</div>';
+  } else alertEl.innerHTML='';
+  const pendingGrades=db.groups.filter(g=>{
+    const ge=db.enrollments.filter(e=>e.groupId===g.id);
+    return ge.length>0&&ge.some(e=>{const f=getFinal(e.studentId,g.periodId,g.id);return f===null||f===undefined;});
+  }).length;
+  const fmPending=(db.formation_enrollments||[]).filter(e=>!e.paid).length;
+  document.getElementById('dash-sub').textContent=db.periods.length+' periodo(s) · '+db.students.length+' alumnos en base';
+  document.getElementById('dash-stats').innerHTML=
+    '<div class="stat-card c1 clickable" onclick="nav(document.querySelector(\'[data-p=roster]\'),\'roster\')">'+
+      '<div class="stat-lbl">Alumnos en base</div>'+
+      '<div class="stat-val">'+totalStudents+'</div>'+
+      '<div class="stat-action">Ver base →</div>'+
+    '</div>'+
+    '<div class="stat-card c2">'+
+      '<div class="stat-lbl">Promedio global</div>'+
+      '<div class="stat-val">'+globalAvg+'</div>'+
+      '<div class="stat-sub">'+approved+' aprobado'+(approved!==1?'s':'')+' de '+db.grades.filter(g=>g.final!==null).length+'</div>'+
+    '</div>'+
+    (pendingGrades>0?
+      '<div class="stat-card c4 clickable" onclick="nav(document.querySelector(\'[data-p=periods]\'),\'periods\')">'+
+        '<div class="stat-lbl">Grupos sin calificar</div>'+
+        '<div class="stat-val" style="color:var(--warn)">'+pendingGrades+'</div>'+
+        '<div class="stat-action">Capturar califs →</div>'+
+      '</div>'
+    :
+      '<div class="stat-card c3">'+
+        '<div class="stat-lbl">Grupos sin calificar</div>'+
+        '<div class="stat-val" style="color:var(--accent2)">0</div>'+
+        '<div class="stat-sub">Todo al día ✓</div>'+
+      '</div>')+
+    (fmPending>0?
+      '<div class="stat-card c4 clickable" onclick="nav(document.querySelector(\'[data-p=formation]\'),\'formation\')">'+
+        '<div class="stat-lbl">Pagos pendientes</div>'+
+        '<div class="stat-val" style="color:var(--warn)">'+fmPending+'</div>'+
+        '<div class="stat-action">Ver grupos en formación →</div>'+
+      '</div>'
+    :
+      '<div class="stat-card c4">'+
+        '<div class="stat-lbl">Inscripciones totales</div>'+
+        '<div class="stat-val">'+totalEnrolls+'</div>'+
+      '</div>');
+  // recent 8 enrollments with grades
+  const recent=db.enrollments.slice(-8).reverse();
+  document.getElementById('dash-tbody').innerHTML=recent.map(e=>{
+    const s=getStudent(e.studentId); if (!s) return '';
+    const fn=fullName(s); const grp=getGroup(e.groupId); const p=getPeriod(e.periodId);
+    const f=getFinal(s.id,e.periodId,e.groupId);
+    return '<tr>'+
+      '<td><div class="sc"><div class="av av-sm" style="background:'+avCol(fn)+'18;color:'+avCol(fn)+'">'+inits(fn)+'</div><div><div class="sc-name">'+fn+'</div></div></div></td>'+
+      '<td>'+s.matricula+'</td>'+
+      '<td>'+(p?'<span class="badge b-neu">'+p.name+'</span>':'—')+'</td>'+
+      '<td>'+(grp?'<span class="badge b-neu">'+grp.name+'</span>':'—')+'</td>'+
+      '<td><span class="badge b-blu">'+(s.career||'—')+'</span></td>'+
+      '<td>'+gbadge(f)+'</td></tr>';
+  }).filter(Boolean).join('')||'<tr><td colspan="6" class="empty"><p>Sin inscripciones</p></td></tr>';
+}
+
+// ROSTER
+function renderRoster() {
+  const q=(document.getElementById('roster-q').value||'').toLowerCase();
+  const cf=document.getElementById('roster-career-f').value;
+  const sf=document.getElementById('roster-sex-f').value;
+  const careers=[...new Set(db.students.map(s=>s.career).filter(Boolean))].sort();
+  document.getElementById('roster-career-f').innerHTML='<option value="">Todas las carreras</option>'+careers.map(c=>'<option value="'+c+'"'+(cf===c?' selected':'')+'>'+c+'</option>').join('');
+  const filtered=db.students.filter(s=>{
+    const fn=fullName(s).toLowerCase();
+    return (!q||fn.includes(q)||s.matricula.toLowerCase().includes(q))&&(!cf||s.career===cf)&&(!sf||s.sex===sf);
+  });
+  document.getElementById('roster-sub').textContent=db.students.length+' alumnos en la base';
+  document.getElementById('roster-tbody').innerHTML=filtered.map(s=>{
+    const fn=fullName(s);
+    return '<tr>'+
+      '<td><div class="sc"><div class="av av-sm" style="background:'+avCol(fn)+'18;color:'+avCol(fn)+'">'+inits(fn)+'</div><div><div class="sc-name">'+fn+'</div><div class="sc-sub">'+(s.email||'')+'</div></div></div></td>'+
+      '<td>'+s.matricula+'</td>'+
+      '<td><span class="badge b-'+(s.sex==='M'?'m':'f')+'">'+(s.sex==='M'?'Hombre':'Mujer')+'</span></td>'+
+      '<td><span class="badge b-blu">'+(s.career||'—')+'</span></td>'+
+      '<td>'+(()=>{const as=s.academicStatus||{};const lvl=as.placementLevel?parseInt(as.placementLevel):0;if(as.nativeLang)return'<span class="badge b-grn" style="font-size:11px">🌍 L.Materna</span>';if(as.cert)return'<span class="badge b-grn" style="font-size:11px">🏆 Cert.</span>';if(lvl)return'<span class="badge b-neu" style="font-size:11px">Niv. '+lvl+'</span>';return'<span style="color:var(--muted2);font-size:12px">—</span>';})()+'</td>'+
+      '<td style="font-size:12px;color:var(--muted);font-weight:500">'+(s.email||'—')+'</td>'+
+      '<td><div class="acts">'+
+        '<button class="btn btn-blue btn-sm" onclick="openStudentGradesModal(\''+s.id+'\')">📋 Califs.</button>'+
+        '<button class="btn btn-out btn-sm" onclick="openAcademicStatus(\''+s.id+'\')">🎓 Estatus</button>'+
+        '<button class="btn btn-out btn-sm" onclick="editStudentModal(\''+s.id+'\')">Editar</button>'+
+        '<button class="btn btn-del btn-sm" onclick="deleteStudent(\''+s.id+'\')">✕</button>'+
+      '</div></td></tr>';
+  }).join('')||'<tr><td colspan="6" class="empty"><p>Sin resultados</p></td></tr>';
+}
+
+// PERIODS — all at once
+let selectedPeriodId = null;
+let selectedGroupId = null;
+
+function renderPeriods() {
+  if (!db.periods) return;
+  document.getElementById('periods-sub').textContent=db.periods.length+' periodo(s) · '+db.groups.length+' grupo(s)';
+  const sorted=[...db.periods].sort((a,b)=>b.name.localeCompare(a.name,'es'));
+  // Auto-select first period if none selected
+  if (!selectedPeriodId || !db.periods.find(p=>p.id===selectedPeriodId)) {
+    selectedPeriodId = sorted[0]?.id || null;
+  }
+  // Render period list
+  const pList=document.getElementById('pe-period-list');
+  if (!sorted.length) {
+    pList.innerHTML='<div class="pe-empty">Sin periodos.<br><br><button class="btn btn-dark btn-sm" onclick="openModal(\'modal-period\')">+ Crear periodo</button></div>';
+    document.getElementById('pe-group-list').innerHTML='<div class="pe-empty">—</div>';
+    document.getElementById('pe-detail-content').innerHTML='';
+    return;
+  }
+  pList.innerHTML=sorted.map(p=>{
+    const grps=periodGroups(p.id);
+    const enr=periodEnrolls(p.id);
+    const active=selectedPeriodId===p.id;
+    return '<div class="pe-period-item'+(active?' active':'')+'" onclick="selectPeriod(\''+p.id+'\')">'+
+      '<div style="flex:1;min-width:0">'+
+        '<div class="pe-period-name">'+p.name+'</div>'+
+        '<div class="pe-period-sub">'+grps.length+' grupos · '+enr.length+' alumnos</div>'+
+      '</div>'+
+      '<div class="pe-period-acts">'+
+        '<button class="btn btn-out" style="padding:3px 7px;font-size:11px" onclick="event.stopPropagation();editPeriodModal(\''+p.id+'\')" title="Editar">✎</button>'+
+        '<button class="btn btn-del" style="padding:3px 7px;font-size:11px" onclick="event.stopPropagation();deletePeriod(\''+p.id+'\')" title="Eliminar">✕</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  renderGroupList();
+}
+
+function selectPeriod(pid) {
+  selectedPeriodId=pid; selectedGroupId=null;
+  renderPeriods();
+}
+
+function selectGroup(gid) {
+  selectedGroupId=gid;
+  renderGroupList();
+  renderGroupDetail();
+}
+
+function renderGroupList() {
+  const el=document.getElementById('pe-group-list');
+  const titleEl=document.getElementById('pe-groups-title');
+  if (!selectedPeriodId) { el.innerHTML='<div class="pe-empty">Selecciona un periodo</div>'; return; }
+  const p=getPeriod(selectedPeriodId);
+  titleEl.textContent='Grupos — '+(p?.name||'');
+  const grps=periodGroups(selectedPeriodId);
+  if (!grps.length) {
+    el.innerHTML='<div class="pe-empty">Sin grupos en este periodo.<br><br>'+
+      '<button class="btn btn-out btn-sm" onclick="openAddGroupModalForPeriod(\''+selectedPeriodId+'\')">+ Agregar grupo</button></div>';
+    document.getElementById('pe-detail-content').innerHTML='<div class="pe-empty" style="padding:40px">Selecciona un grupo</div>';
+    return;
+  }
+  // Auto-select first group if none selected or if selected group not in this period
+  if (!selectedGroupId || !grps.find(g=>g.id===selectedGroupId)) {
+    selectedGroupId=grps[0].id;
+  }
+  renderGroupDetail();
+  el.innerHTML=grps.map(g=>{
+    const ge=groupEnrolls(g.id);
+    const active=selectedGroupId===g.id;
+    return '<div class="pe-group-item'+(active?' active':'')+'" onclick="selectGroup(\''+g.id+'\')">'+
+      '<div class="pe-group-dot"></div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div class="pe-group-name">'+g.name+(g.locked?' 🔒':'')+'</div>'+
+        '<div class="pe-group-sub">'+g.teacher+(g.level?' · Niv.'+g.level:'')+' · '+ge.length+' alumnos'+(g.modality?' · '+{presencial:'Presencial',hibrido:'Híbrido',virtual:'Virtual'}[g.modality]:'')+'</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function renderGroupDetail() {
+  const el=document.getElementById('pe-detail-content');
+  const titleEl=document.getElementById('pe-detail-title');
+  if (!selectedGroupId) { el.innerHTML='<div class="pe-empty" style="padding:40px">Selecciona un grupo</div>'; return; }
+  const g=getGroup(selectedGroupId); if (!g) return;
+  const p=getPeriod(g.periodId);
+  titleEl.textContent=g.name;
+  const enrolls=groupEnrolls(selectedGroupId).sort((a,b)=>{ const sa=getStudent(a.studentId); const sb=getStudent(b.studentId); if(!sa||!sb) return 0; const ka=(sa.ap||'')+' '+(sa.am||'')+' '+(sa.nombre||''); const kb=(sb.ap||'')+' '+(sb.am||'')+' '+(sb.nombre||''); return ka.localeCompare(kb,'es',{sensitivity:'base'}); });
+  const finals=enrolls.map(e=>getFinal(e.studentId,g.periodId,g.id)).filter(v=>v!==null).map(Number);
+  const avg=finals.length?(finals.reduce((a,b)=>a+b,0)/finals.length).toFixed(1):'—';
+  const aprobados=finals.filter(f=>f>=70).length;
+  const studentRows=enrolls.map(e=>{
+    const s=getStudent(e.studentId); if(!s) return '';
+    const fn=fullName(s);
+    const f=getFinal(s.id,g.periodId,g.id);
+    const fColor=f===null?'var(--muted)':parseFloat(f)>=70?'var(--accent2)':'var(--danger)';
+    return '<div class="pe-student-row">'+
+      '<div class="av av-sm" style="background:'+avCol(fn)+'18;color:'+avCol(fn)+'">'+inits(fn)+'</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+fn+'</div>'+
+        '<div style="font-size:11px;color:var(--muted);font-weight:500">'+s.matricula+'</div>'+
+      '</div>'+
+      '<div style="font-size:16px;font-weight:900;color:'+fColor+';min-width:32px;text-align:right">'+(f!==null?f:'—')+'</div>'+
+      ((!g.locked || isAdmin()) ? '<button class="btn btn-out" style="padding:3px 8px;font-size:11px;margin-left:6px" onclick="openGradesModalFromRoster(\''+s.id+'\',\''+g.periodId+'\',\''+g.id+'\')">'+(f!==null?'✎':'+ Nota')+'</button>' : '')+
+      '<button class="btn btn-del" style="padding:3px 7px;font-size:11px;margin-left:2px" onclick="unenrollStudent(\''+s.id+'\',\''+g.id+'\')">✕</button>'+
+    '</div>';
+  }).filter(Boolean).join('');
+
+  el.innerHTML='<div class="pe-detail-inner">'+
+    '<div class="pe-detail-header">'+
+      '<div class="pe-detail-name">'+g.name+(g.locked?' 🔒':'')+'</div>'+
+      '<div class="pe-detail-meta" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+        '<span>'+g.teacher+(g.subject?' · '+g.subject:'')+(p?' · '+p.name:'')+'</span>'+
+        (g.level?'<span style="background:var(--accent);color:#fff;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px">Nivel '+g.level+'</span>':'')+
+        modalityBadge(g.modality)+
+      '</div>'+
+    '</div>'+
+    '<div class="pe-detail-stats">'+
+      '<div class="pe-detail-stat"><div class="pe-detail-stat-val">'+enrolls.length+'</div><div class="pe-detail-stat-lbl">Alumnos</div></div>'+
+      '<div class="pe-detail-stat"><div class="pe-detail-stat-val" style="color:var(--accent2)">'+aprobados+'</div><div class="pe-detail-stat-lbl">Aprobados</div></div>'+
+      '<div class="pe-detail-stat"><div class="pe-detail-stat-val" style="color:var(--muted)">'+avg+'</div><div class="pe-detail-stat-lbl">Promedio</div></div>'+
+    '</div>'+
+    '<div class="pe-detail-acts">'+
+      '<button class="btn btn-dark btn-sm" onclick="openEnrollModalForGroup(\''+g.id+'\')">+ Inscribir alumnos</button>'+
+      '<button class="btn btn-blue btn-sm" onclick="exportGroupPDF(\''+g.id+'\')">📄 PDF</button>'+
+      (isAdmin() ? '<button class="btn btn-sm '+(g.locked?'btn-warn':'btn-out')+'" onclick="toggleGroupLock(\''+g.id+'\')">'+(g.locked?'🔒 Desbloquear':'🔓 Bloquear califs.')+'</button>' : (g.locked ? '<span class="badge b-neu" style="font-size:11px;padding:4px 8px">🔒 Califs. bloqueadas</span>' : ''))+
+      '<button class="btn btn-out btn-sm" onclick="editGroupModal(\''+g.id+'\')">Editar grupo</button>'+
+      '<button class="btn btn-del btn-sm" onclick="deleteGroup(\''+g.id+'\')">Eliminar grupo</button>'+
+    '</div>'+
+    '<div style="font-weight:800;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Lista de alumnos</div>'+
+    (studentRows||'<div style="color:var(--muted);font-size:13px;font-weight:600;padding:16px 0;text-align:center">Sin alumnos inscritos</div>')+
+  '</div>';
+}
+
+// Helper to open enroll modal pre-selecting a specific group
+function openEnrollModalForGroup(gid) {
+  const allGrps=db.groups;
+  if (!db.students.length){toast('La base de alumnos está vacía','err');return;}
+  document.getElementById('enroll-grp-sel').innerHTML=
+    '<option value="">— Selecciona un grupo —</option>'+
+    allGrps.map(g=>{const p=getPeriod(g.periodId);return '<option value="'+g.id+'"'+(g.id===gid?' selected':'')+'>'+( p?p.name+' — ':'')+g.name+' ('+g.teacher+')</option>';}).join('');
+  document.getElementById('enroll-q').value='';
+  enrollSelected=new Set(); renderEnrollList(); openModal('modal-enroll');
+}
+
+
+// PERIOD CRUD
+function editPeriodModal(id) {
+  const p=getPeriod(id);
+  document.getElementById('modal-period-title').textContent='Editar Periodo';
+  document.getElementById('p-edit-id').value=id;
+  document.getElementById('p-name').value=p.name;
+  document.getElementById('p-start').value=p.start||'';
+  document.getElementById('p-end').value=p.end||'';
+  openModal('modal-period');
+}
+function savePeriod() {
+  const name=document.getElementById('p-name').value.trim();
+  if (!name){toast('El nombre es requerido','err');return;}
+  const eid=document.getElementById('p-edit-id').value;
+  if (eid) {
+    const p=getPeriod(eid); p.name=name; p.start=document.getElementById('p-start').value; p.end=document.getElementById('p-end').value;
+    toast('Periodo actualizado');
+  } else {
+    db.periods.push({id:uid(),name,start:document.getElementById('p-start').value,end:document.getElementById('p-end').value});
+    toast('Periodo creado');
+  }
+  saveDb(); closeModal('modal-period'); renderPeriods();
+  document.getElementById('p-name').value=''; document.getElementById('p-edit-id').value='';
+  document.getElementById('modal-period-title').textContent='Nuevo Periodo';
+}
+function deletePeriod(id) {
+  const p=getPeriod(id);
+  const enrollCount=periodEnrolls(id).length;
+  if (!confirm('¿Eliminar el periodo "'+p.name+'"?'+(enrollCount?' Tiene '+enrollCount+' inscripciones que también se eliminarán.':''))) return;
+  db.periods=db.periods.filter(p=>p.id!==id);
+  db.groups=db.groups.filter(g=>g.periodId!==id);
+  db.enrollments=db.enrollments.filter(e=>e.periodId!==id);
+  db.grades=db.grades.filter(g=>g.periodId!==id);
+  saveDb(); toast('Periodo eliminado'); renderPeriods(); renderDashboard();
+}
+
+// GROUP CRUD
+function openAddGroupModal() {
+  if (!db.periods.length){toast('Crea un periodo primero','err');return;}
+  document.getElementById('modal-group-title').textContent='Nuevo Grupo';
+  document.getElementById('g-edit-id').value='';
+  ['g-name','g-subject'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('g-level').value='';
+  const gmod2=document.getElementById('g-modality'); if(gmod2) gmod2.value='';
+  document.getElementById('g-period-sel').innerHTML=db.periods.map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join('');
+  populateTeacherSel('');
+  openModal('modal-group');
+}
+function openAddGroupModalForPeriod(pid) {
+  openAddGroupModal();
+  document.getElementById('g-period-sel').value=pid;
+}
+function editGroupModal(id) {
+  const g=getGroup(id);
+  document.getElementById('modal-group-title').textContent='Editar Grupo';
+  document.getElementById('g-edit-id').value=id;
+  document.getElementById('g-name').value=g.name;
+  document.getElementById('g-subject').value=g.subject||'';
+  document.getElementById('g-level').value=g.level||'';
+  const gmod=document.getElementById('g-modality'); if(gmod) gmod.value=g.modality||'';
+  document.getElementById('g-period-sel').innerHTML=db.periods.map(p=>'<option value="'+p.id+'"'+(p.id===g.periodId?' selected':'')+'>'+p.name+'</option>').join('');
+  populateTeacherSel(g.teacherId||'');
+  openModal('modal-group');
+}
+function populateTeacherSel(selectedId) {
+  if (!db.teachers) db.teachers=[];
+  const sel=document.getElementById('g-teacher-sel');
+  const activeTeachers=db.teachers.filter(t=>!t.archived);
+  if (activeTeachers.length) {
+    sel.innerHTML='<option value="">— Selecciona maestro —</option>'+
+      activeTeachers.map(t=>'<option value="'+t.id+'"'+(t.id===selectedId?' selected':'')+'>'+t.name+(t.subject?' · '+t.subject:'')+'</option>').join('')+
+      '<option value="__manual">+ Escribir nombre manualmente</option>';
+  } else {
+    sel.innerHTML='<option value="">— Sin maestros activos —</option><option value="__manual">+ Escribir nombre manualmente</option>';
+  }
+  sel.value=selectedId||'';
+  // Show/hide manual input
+  const manualWrap=document.getElementById('g-teacher-manual-wrap');
+  const manual=document.getElementById('g-teacher');
+  const showManual=!db.teachers.length||sel.value==='__manual';
+  if (manualWrap) manualWrap.style.display=showManual?'block':'none';
+  if (!db.teachers.length) {
+    if (manual) manual.value='';
+  }
+  // Listen for change
+  sel.onchange=()=>{
+    const show=sel.value==='__manual';
+    if (manualWrap) manualWrap.style.display=show?'block':'none';
+    if (show&&manual) manual.focus();
+  };
+}
+function saveGroup() {
+  if (!db.teachers) db.teachers=[];
+  const name=document.getElementById('g-name').value.trim();
+  const periodId=document.getElementById('g-period-sel').value;
+  const sel=document.getElementById('g-teacher-sel');
+  const teacherId=sel.value;
+  let teacherName='';
+  if (teacherId) {
+    const t=db.teachers.find(t=>t.id===teacherId);
+    teacherName=t?t.name:'';
+  } else {
+    teacherName=document.getElementById('g-teacher').value.trim();
+  }
+  if (!name){toast('El nombre del grupo es requerido','err');return;}
+  if (!teacherName){toast('Selecciona o escribe un maestro','err');return;}
+  const eid=document.getElementById('g-edit-id').value;
+  if (eid){
+    const g=getGroup(eid);g.name=name;g.teacher=teacherName;g.teacherId=teacherId||null;
+    g.subject=document.getElementById('g-subject').value.trim();
+    g.level=parseInt(document.getElementById('g-level').value)||0;
+    g.modality=document.getElementById('g-modality')?.value||'';
+    g.periodId=periodId;toast('Grupo actualizado');
+  } else {
+    db.groups.push({id:uid(),periodId,name,teacher:teacherName,teacherId:teacherId||null,
+      subject:document.getElementById('g-subject').value.trim(),
+      level:parseInt(document.getElementById('g-level').value)||0,
+      modality:document.getElementById('g-modality')?.value||''});
+    toast('Grupo creado');
+  }
+  saveDb(); closeModal('modal-group'); renderPeriods();
+}
+function deleteGroup(id) {
+  const n=groupEnrolls(id).length;
+  if (n&&!confirm('Este grupo tiene '+n+' alumnos inscritos. ¿Eliminar?')) return;
+  db.groups=db.groups.filter(g=>g.id!==id);
+  db.enrollments=db.enrollments.filter(e=>e.groupId!==id);
+  saveDb(); toast('Grupo eliminado'); renderPeriods(); renderDashboard();
+}
+
+// ENROLL
+let enrollSelected=new Set();
+function openEnrollModal() {
+  const allGrps=db.groups;
+  if (!allGrps.length){toast('Crea al menos un grupo primero','err');return;}
+  if (!db.students.length){toast('La base de alumnos está vacía','err');return;}
+  document.getElementById('enroll-grp-sel').innerHTML='<option value="">— Selecciona un grupo —</option>'+allGrps.map(g=>{
+    const p=getPeriod(g.periodId); return '<option value="'+g.id+'">'+(p?p.name+' — ':'')+g.name+' ('+g.teacher+')</option>';
+  }).join('');
+  document.getElementById('enroll-q').value='';
+  enrollSelected=new Set(); renderEnrollList(); openModal('modal-enroll');
+}
+function renderEnrollList() {
+  const q=(document.getElementById('enroll-q').value||'').toLowerCase();
+  const gid=document.getElementById('enroll-grp-sel').value;
+  const filtered=db.students.filter(s=>{
+    const fn=fullName(s).toLowerCase();
+    return !q||fn.includes(q)||s.matricula.toLowerCase().includes(q);
+  });
+  document.getElementById('enroll-list').innerHTML=filtered.map(s=>{
+    const fn=fullName(s);
+    // Solo bloquear si YA está en este grupo exacto (no en el periodo)
+    const alreadyInThisGroup=gid?db.enrollments.find(e=>e.studentId===s.id&&e.groupId===gid):null;
+    const sel=enrollSelected.has(s.id);
+    const totalInscripciones=db.enrollments.filter(e=>e.studentId===s.id).length;
+    const clickH=alreadyInThisGroup?'':'onclick="toggleEnroll(\''+s.id+'\')"';
+    return '<div class="enroll-item'+(sel?' selected':'')+(alreadyInThisGroup?' style="opacity:.5;cursor:default"':'')+'" '+clickH+'>'+
+      '<div class="enroll-check">'+(sel?'<svg width="10" height="10" fill="none" stroke="#fff" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>':'')+'</div>'+
+      '<div class="av av-sm" style="background:'+avCol(fn)+'18;color:'+avCol(fn)+'">'+inits(fn)+'</div>'+
+      '<div style="flex:1"><div class="sc-name">'+fn+'</div>'+
+        '<div class="sc-sub">'+s.matricula+' · '+(s.career||'')+(totalInscripciones?' · '+totalInscripciones+' inscripción(es)':'')+'</div>'+
+      '</div>'+
+      (alreadyInThisGroup?'<span class="enroll-already">Ya en este grupo</span>':'')+
+    '</div>';
+  }).join('')||'<div class="empty"><p>Sin resultados</p></div>';
+  document.getElementById('enroll-count').textContent=enrollSelected.size?enrollSelected.size+' alumno(s) seleccionados':'';
+}
+function toggleEnroll(sid){if(enrollSelected.has(sid))enrollSelected.delete(sid);else enrollSelected.add(sid);renderEnrollList();}
+function confirmEnroll() {
+  const gid0=document.getElementById('enroll-grp-sel').value;
+  if (!gid0){toast('Selecciona un grupo primero','err');return;}
+  if (!enrollSelected.size){toast('Selecciona al menos un alumno','err');return;}
+  const gid=document.getElementById('enroll-grp-sel').value;
+  const grp=getGroup(gid); if (!grp) return;
+  let added=0;
+  enrollSelected.forEach(sid=>{
+    if (!getEnrollGroup(sid,gid)){db.enrollments.push({studentId:sid,groupId:gid,periodId:grp.periodId});added++;}
+  });
+  saveDb(); closeModal('modal-enroll'); toast(added+' alumno(s) inscritos'); renderPeriods(); renderDashboard();
+}
+
+// STUDENT CRUD
+function openAddStudentModal() {
+  document.getElementById('modal-student-title').textContent='Nuevo Alumno';
+  ['s-edit-id','s-nombre','s-ap','s-am','s-mat','s-career','s-email'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('s-sex').value='M';
+  refreshCareersDl(); openModal('modal-student');
+}
+function editStudentModal(id) {
+  const s=getStudent(id);
+  document.getElementById('modal-student-title').textContent='Editar Alumno';
+  document.getElementById('s-edit-id').value=id;
+  document.getElementById('s-nombre').value=s.nombre||'';
+  document.getElementById('s-ap').value=s.ap||'';
+  document.getElementById('s-am').value=s.am||'';
+  document.getElementById('s-mat').value=s.matricula||'';
+  document.getElementById('s-career').value=s.career||'';
+  document.getElementById('s-sex').value=s.sex||'M';
+  document.getElementById('s-email').value=s.email||'';
+  refreshCareersDl(); openModal('modal-student');
+}
+function refreshCareersDl(){
+  const careers=[...new Set(db.students.map(s=>s.career).filter(Boolean))];
+  document.getElementById('careers-dl').innerHTML=careers.map(c=>'<option value="'+c+'">').join('');
+}
+function saveStudent() {
+  const mat=document.getElementById('s-mat').value.trim();
+  const nombre=document.getElementById('s-nombre').value.trim();
+  if (!mat||!nombre){toast('Nombre y matrícula son requeridos','err');return;}
+  const eid=document.getElementById('s-edit-id').value;
+  const data={nombre,ap:document.getElementById('s-ap').value.trim(),am:document.getElementById('s-am').value.trim(),matricula:mat,career:document.getElementById('s-career').value.trim(),sex:document.getElementById('s-sex').value,email:document.getElementById('s-email').value.trim()};
+  if (eid){Object.assign(getStudent(eid),data);toast('Alumno actualizado');}
+  else{
+    if (db.students.find(s=>s.matricula===mat)){toast('Matrícula ya existe','err');return;}
+    db.students.push({...data,id:uid()});toast('Alumno agregado');
+  }
+  saveDb(); closeModal('modal-student'); renderRoster();
+}
+function deleteStudent(id) {
+  const s=getStudent(id);
+  if (!confirm('¿Eliminar a '+fullName(s)+'? También se eliminarán sus inscripciones y calificaciones.')) return;
+  db.students=db.students.filter(s=>s.id!==id);
+  db.enrollments=db.enrollments.filter(e=>e.studentId!==id);
+  db.grades=db.grades.filter(g=>g.studentId!==id);
+  saveDb(); toast('Alumno eliminado'); renderRoster();
+}
+
+// GRADES
+function renderGrades() {
+  const pf=document.getElementById('grades-period-f').value;
+  const gf=document.getElementById('grades-grp-f').value;
+  const q=(document.getElementById('grades-q').value||'').toLowerCase();
+  document.getElementById('grades-period-f').innerHTML='<option value="">Todos los periodos</option>'+db.periods.map(p=>'<option value="'+p.id+'"'+(pf===p.id?' selected':'')+'>'+p.name+'</option>').join('');
+  const visibleGrps=pf?periodGroups(pf):db.groups;
+  document.getElementById('grades-grp-f').innerHTML='<option value="">Todos los grupos</option>'+visibleGrps.map(g=>'<option value="'+g.id+'"'+(gf===g.id?' selected':'')+'>'+g.name+'</option>').join('');
+  document.getElementById('grades-sub').textContent=(pf?getPeriod(pf)?.name:'Todos los periodos');
+  let enrolls=db.enrollments;
+  if (pf) enrolls=enrolls.filter(e=>e.periodId===pf);
+  if (gf) enrolls=enrolls.filter(e=>e.groupId===gf);
+  document.getElementById('grades-tbody').innerHTML=enrolls.map(e=>{
+    const s=getStudent(e.studentId); if (!s) return '';
+    const fn=fullName(s);
+    if (q&&!fn.toLowerCase().includes(q)&&!s.matricula.toLowerCase().includes(q)) return '';
+    const grp=getGroup(e.groupId); const p=getPeriod(e.periodId); const f=getFinal(s.id,e.periodId,e.groupId);
+    return '<tr>'+
+      '<td><div class="sc"><div class="av av-sm" style="background:'+avCol(fn)+'18;color:'+avCol(fn)+'">'+inits(fn)+'</div><div class="sc-name">'+fn+'</div></div></td>'+
+      '<td>'+(p?'<span class="badge b-neu">'+p.name+'</span>':'—')+'</td>'+
+      '<td>'+(grp?'<span class="badge b-neu">'+grp.name+'</span>':'—')+'</td>'+
+      '<td style="font-size:12px;color:var(--muted)">'+(grp?.teacher||'—')+'</td>'+
+      '<td>'+gbadge(f)+'</td>'+
+      '<td>'+sbadge(f)+'</td>'+
+      '<td><button class="btn btn-out btn-sm" onclick="openGradesModal(\''+s.id+'\',\''+e.periodId+'\',\''+e.groupId+'\')">Editar</button></td>'+
+    '</tr>';
+  }).filter(Boolean).join('')||'<tr><td colspan="7" class="empty"><p>Sin alumnos inscritos</p></td></tr>';
+}
+function openGradesModal(sid, pid, gid) {
+  if (isGroupLocked(gid) && !isAdmin()) {
+    toast('🔒 Calificaciones bloqueadas en este grupo','err'); return;
+  }
+  const s=getStudent(sid); const p=getPeriod(pid); const g=getGroup(gid);
+  document.getElementById('modal-grades-title').textContent='Calificación — '+fullName(s)+(p?' · '+p.name:'')+(g?' · '+g.name:'');
+  document.getElementById('grd-sid').value=sid;
+  document.getElementById('grd-pid').value=pid;
+  document.getElementById('grd-gid').value=gid||'';
+  const f=getFinal(sid,pid,gid);
+  document.getElementById('grd-final').value=f!==null?f:'';
+  openModal('modal-grades');
+}
+function saveGrades() {
+  const sid=document.getElementById('grd-sid').value;
+  const pid=document.getElementById('grd-pid').value;
+  const gid=document.getElementById('grd-gid').value;
+  // Check lock
+  if (isGroupLocked(gid) && !isAdmin()) {
+    toast('🔒 Este grupo está bloqueado. Solo el admin puede editar calificaciones.','err');
+    closeModal('modal-grades');
+    return;
+  }
+  const val=document.getElementById('grd-final').value;
+  const final=val===''?null:parseFloat(val);
+  const i=db.grades.findIndex(g=>g.studentId===sid&&g.periodId===pid&&g.groupId===gid);
+  if (i>=0) db.grades[i].final=final;
+  else db.grades.push({studentId:sid,periodId:pid,groupId:gid,final});
+  saveDb(); toast('Calificación guardada'); closeModal('modal-grades');
+  document.getElementById('modal-grades').classList.remove('on-top');
+  const fromRoster=document.getElementById('modal-grades')._fromRoster;
+  if (fromRoster) { renderGroupRosterList(fromRoster); document.getElementById('modal-grades')._fromRoster=null; }
+  renderGrades();
+}
+
+// SEARCH
+function doSearch() {
+  const q=(document.getElementById('search-inp').value||'').trim().toLowerCase();
+  const el=document.getElementById('search-results');
+  if (!q){el.innerHTML='';return;}
+  const matches=db.students.filter(s=>{const fn=fullName(s).toLowerCase();return fn.includes(q)||s.matricula.toLowerCase().includes(q);});
+  if (!matches.length){el.innerHTML='<div class="empty"><p>No se encontró ningún alumno</p></div>';return;}
+  el.innerHTML=matches.map(s=>{
+    const fn=fullName(s);
+    const enrolls=db.enrollments.filter(e=>e.studentId===s.id).sort((a,b)=>{const pa=getPeriod(a.periodId)?.name||'';const pb=getPeriod(b.periodId)?.name||'';return pb.localeCompare(pa);});
+    const histHtml=enrolls.length?enrolls.map(e=>{
+      const p=getPeriod(e.periodId); const grp=getGroup(e.groupId); const f=getFinal(s.id,e.periodId,e.groupId);
+      return '<div class="hist-item">'+
+        '<div class="hi-top">'+
+          '<div><div class="hi-period">'+(p?.name||'—')+'</div><div class="hi-group">'+(grp?grp.name+' · '+grp.teacher:'Sin grupo')+'</div></div>'+
+          '<div style="display:flex;gap:6px;align-items:center">'+sbadge(f)+
+            '<button class="btn btn-out btn-xs" onclick="openGradesModal(\''+s.id+'\',\''+e.periodId+'\',\''+e.groupId+'\')">Editar nota</button>'+
+          '</div>'+
+        '</div>'+
+        '<div class="grade-display">'+
+          '<div class="gp"><div class="gp-lbl">Calificación Final</div><div class="gp-val" style="color:'+(f!==null&&parseFloat(f)>=70?'var(--accent2)':'var(--danger)')+'">'+(f!==null?f:'—')+'</div></div>'+
+        '</div>'+
+      '</div>';
+    }).join('')
+    :'<div style="color:var(--muted);font-size:13px;font-weight:600;padding:6px 0">No está inscrito en ningún periodo. '+
+      (db.groups.length?'<button class="btn btn-grn btn-sm" style="margin-left:8px" onclick="quickEnroll(\''+s.id+'\')">Inscribir</button>':'')+
+    '</div>';
+    return '<div class="profile-card">'+
+      '<div class="profile-top">'+
+        '<div class="av av-lg" style="background:'+avCol(fn)+'18;color:'+avCol(fn)+'">'+inits(fn)+'</div>'+
+        '<div>'+
+          '<div class="profile-name">'+fn+'</div>'+
+          '<div class="profile-id">Matrícula: <strong>'+s.matricula+'</strong></div>'+
+          '<div class="profile-tags">'+
+            '<span class="badge b-blu">'+(s.career||'Sin carrera')+'</span>'+
+            '<span class="badge b-'+(s.sex==='M'?'m':'f')+'">'+(s.sex==='M'?'Hombre':'Mujer')+'</span>'+
+            (s.email?'<span class="badge b-neu">'+s.email+'</span>':'')+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      histHtml+
+    '</div>';
+  }).join('');
+}
+function quickEnroll(sid) {
+  document.getElementById('enroll-grp-sel').innerHTML=db.groups.map(g=>{
+    const p=getPeriod(g.periodId); return '<option value="'+g.id+'">'+(p?p.name+' — ':'')+g.name+'</option>';
+  }).join('');
+  document.getElementById('enroll-q').value='';
+  enrollSelected=new Set([sid]); renderEnrollList(); openModal('modal-enroll');
+}
+
+// TEACHERS
+// STUDENT GRADES HISTORY MODAL
+function openStudentGradesModal(sid) {
+  const s=getStudent(sid); if (!s) return;
+  const fn=fullName(s);
+  document.getElementById('modal-sg-title').textContent='Calificaciones — '+fn;
+  const enrolls=db.enrollments.filter(e=>e.studentId===sid)
+    .sort((a,b)=>{const pa=getPeriod(a.periodId)?.name||'';const pb=getPeriod(b.periodId)?.name||'';return pb.localeCompare(pa,'es');});
+  if (!enrolls.length) {
+    document.getElementById('modal-sg-content').innerHTML='<div class="empty"><p>Sin inscripciones registradas</p></div>';
+    openModal('modal-student-grades'); return;
+  }
+  const rows=enrolls.map(e=>{
+    const p=getPeriod(e.periodId); const grp=getGroup(e.groupId);
+    const f=getFinal(sid,e.periodId,e.groupId);
+    const fColor=f===null?'var(--muted)':parseFloat(f)>=70?'var(--accent2)':'var(--danger)';
+    const estado=f===null?'—':parseFloat(f)>=70?'Aprobado':'Reprobado';
+    const estadoClass=f===null?'b-neu':parseFloat(f)>=70?'b-grn':'b-red';
+    return '<tr>'+
+      '<td style="font-weight:800">'+(p?.name||'—')+'</td>'+
+      '<td>'+(grp?'<span class="badge b-neu">'+grp.name+'</span>':'—')+'</td>'+
+      '<td style="font-size:12px;color:var(--muted)">'+(grp?.teacher||'—')+'</td>'+
+      '<td style="font-size:12px;color:var(--muted)">'+(grp?.subject||'—')+'</td>'+
+      '<td style="font-size:20px;font-weight:900;text-align:center;color:'+fColor+'">'+(f!==null?f:'—')+'</td>'+
+      '<td><span class="badge '+estadoClass+'">'+estado+'</span></td>'+
+    '</tr>';
+  }).join('');
+  document.getElementById('modal-sg-content').innerHTML=
+    '<table>'+
+      '<thead><tr><th>Periodo</th><th>Grupo</th><th>Maestro</th><th>Materia</th><th style="text-align:center">Calif.</th><th>Estado</th></tr></thead>'+
+      '<tbody>'+rows+'</tbody>'+
+    '</table>';
+  openModal('modal-student-grades');
+}
+
+
+function openGroupRoster(gid) {
+  const grp=getGroup(gid); if (!grp) return;
+  const p=getPeriod(grp.periodId);
+  document.getElementById('modal-roster-title').textContent='Lista — '+grp.name;
+  document.getElementById('modal-roster-meta').textContent=(p?p.name+' · ':'')+grp.teacher+(grp.subject?' · '+grp.subject:'');
+  renderGroupRosterList(gid);
+  openModal('modal-group-roster');
+}
+function renderGroupRosterList(gid) {
+  const grp=getGroup(gid); if (!grp) return;
+  const enrolls=groupEnrolls(gid).sort((a,b)=>{ const sa=getStudent(a.studentId); const sb=getStudent(b.studentId); if(!sa||!sb) return 0; const ka=(sa.ap||'')+' '+(sa.am||'')+' '+(sa.nombre||''); const kb=(sb.ap||'')+' '+(sb.am||'')+' '+(sb.nombre||''); return ka.localeCompare(kb,'es',{sensitivity:'base'}); });
+  const el=document.getElementById('modal-roster-list');
+  if (!enrolls.length) {
+    el.innerHTML='<div class="empty"><p>Sin alumnos inscritos</p></div>';
+    return;
+  }
+  const rows=enrolls.map(e=>{
+    const s=getStudent(e.studentId); if (!s) return '';
+    const fn=fullName(s);
+    const f=getFinal(s.id,grp.periodId,gid);
+    const fColor=f===null?'var(--muted)':parseFloat(f)>=70?'var(--accent2)':'var(--danger)';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid var(--border)">'+
+      '<div class="av av-sm" style="background:'+avCol(fn)+'18;color:'+avCol(fn)+'">'+inits(fn)+'</div>'+
+      '<div style="flex:1">'+
+        '<div style="font-weight:700;font-size:13px">'+fn+'</div>'+
+        '<div style="font-size:11.5px;color:var(--muted);font-weight:500">'+s.matricula+' · '+(s.career||'—')+'</div>'+
+      '</div>'+
+      '<div style="font-size:20px;font-weight:900;color:'+fColor+';min-width:36px;text-align:center">'+(f!==null?f:'—')+'</div>'+
+      '<button class="btn btn-out btn-sm" onclick="openGradesModalFromRoster(\''+s.id+'\',\''+grp.periodId+'\',\''+gid+'\')">'+
+        (f!==null?'Editar':'+ Nota')+
+      '</button>'+
+      '<button class="btn btn-del btn-sm" onclick="unenrollStudent(\''+e.studentId+'\',\''+gid+'\')">Quitar</button>'+
+    '</div>';
+  }).filter(Boolean).join('');
+  el.innerHTML=rows||'<div class="empty"><p>Sin alumnos</p></div>';
+}
+function openGradesModalFromRoster(sid, pid, gid) {
+  openGradesModal(sid, pid, gid);
+  // Poner el modal de calificación por encima del modal de lista
+  document.getElementById('modal-grades').classList.add('on-top');
+  document.getElementById('modal-grades')._fromRoster=gid;
+}
+function unenrollStudent(sid, gid) {
+  const s=getStudent(sid); const grp=getGroup(gid);
+  if (!confirm('¿Quitar a '+fullName(s)+' del grupo '+grp.name+'?')) return;
+  db.enrollments=db.enrollments.filter(e=>!(e.studentId===sid&&e.groupId===gid));
+  // Eliminar calificación asociada a este grupo
+  db.grades=db.grades.filter(g=>!(g.studentId===sid&&g.groupId===gid));
+  saveDb(); toast(fullName(s)+' eliminado del grupo');
+  renderGroupRosterList(gid); renderPeriods(); renderGroupDetail();
+}
+
+// TEACHERS
+function renderTeachers() {
+  if (!db.teachers) db.teachers=[];
+  const q=(document.getElementById('teachers-q').value||'').toLowerCase();
+  const showArchived=document.getElementById('teachers-show-archived')?.checked;
+  const active=db.teachers.filter(t=>!t.archived);
+  const archived=db.teachers.filter(t=>t.archived);
+  const filtered=db.teachers.filter(t=>{
+    if (!showArchived && t.archived) return false;
+    return !q||t.name.toLowerCase().includes(q)||(t.subject||'').toLowerCase().includes(q);
+  });
+  document.getElementById('teachers-sub').textContent=active.length+' activo(s)'+(archived.length?' · '+archived.length+' archivado(s)':'');
+  document.getElementById('teachers-tbody').innerHTML=filtered.map(t=>{
+    const grupos=db.groups.filter(g=>g.teacherId===t.id);
+    const archivedBadge=t.archived?'<span class="badge b-neu" style="margin-left:6px;opacity:.7">Archivado</span>':'';
+    return '<tr style="opacity:'+(t.archived?.6:1)+'">'+
+      '<td><div class="sc"><div class="av av-sm" style="background:'+avCol(t.name)+'18;color:'+avCol(t.name)+'">'+inits(t.name)+'</div><div><div class="sc-name">'+t.name+archivedBadge+'</div></div></div></td>'+
+      '<td><span class="badge b-pur">'+(t.subject||'—')+'</span></td>'+
+      '<td style="font-size:12px;color:var(--muted)">'+(t.email||'—')+'</td>'+
+      '<td><span class="badge b-neu">'+grupos.length+' grupo(s)</span></td>'+
+      '<td><div class="acts">'+
+        '<button class="btn btn-out btn-sm" onclick="editTeacherModal(\''+t.id+'\')">Editar</button>'+
+        '<button class="btn btn-out btn-sm" onclick="archiveTeacher(\''+t.id+'\')">'+(t.archived?'Activar':'Archivar')+'</button>'+
+        '<button class="btn btn-del btn-sm" onclick="deleteTeacher(\''+t.id+'\')">Eliminar</button>'+
+      '</div></td></tr>';
+  }).join('')||'<tr><td colspan="5" class="empty"><p>Sin maestros'+(q?' con ese criterio':'')+'</p></td></tr>';
+  if (document.getElementById('users-tbody')) renderUsersTable();
+}
+function openAddTeacherModal() {
+  document.getElementById('modal-teacher-title').textContent='Nuevo Maestro';
+  ['t-edit-id','t-name','t-subject','t-email','t-notes'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  openModal('modal-teacher');
+}
+function editTeacherModal(id) {
+  const t=getTeacher(id); if (!t) return;
+  document.getElementById('modal-teacher-title').textContent='Editar Maestro';
+  document.getElementById('t-edit-id').value=id;
+  document.getElementById('t-name').value=t.name||'';
+  const subj=document.getElementById('t-subject'); if(subj) subj.value=t.subject||'';
+  document.getElementById('t-email').value=t.email||'';
+  const notes=document.getElementById('t-notes'); if(notes) notes.value=t.notes||'';
+  openModal('modal-teacher');
+}
+function saveTeacher() {
+  const name=document.getElementById('t-name').value.trim();
+  if (!name){toast('El nombre es requerido','err');return;}
+  const eid=document.getElementById('t-edit-id').value;
+  const data={
+    name,
+    subject:(document.getElementById('t-subject')?.value||'').trim(),
+    email:(document.getElementById('t-email')?.value||'').trim(),
+    notes:(document.getElementById('t-notes')?.value||'').trim()
+  };
+  if (eid){
+    const t=getTeacher(eid); if(!t) return;
+    Object.assign(t, data);
+    // sync name in groups
+    db.groups.filter(g=>g.teacherId===eid).forEach(g=>g.teacher=name);
+    toast('Maestro actualizado');
+  } else {
+    const newT={...data, id:uid(), archived:false};
+    db.teachers.push(newT);
+    toast('Maestro agregado');
+    saveDb(); closeModal('modal-teacher'); renderTeachers();
+    autoCreateUserFromTeacher(newT);
+    return;
+  }
+  saveDb(); closeModal('modal-teacher'); renderTeachers();
+}
+function archiveTeacher(id) {
+  const t=getTeacher(id); if (!t) return;
+  t.archived=!t.archived;
+  saveDb();
+  toast(t.archived?t.name+' archivado — su nombre se conserva en grupos y calificaciones':t.name+' reactivado');
+  renderTeachers();
+}
+function deleteTeacher(id) {
+  const t=getTeacher(id); if (!t) return;
+  const grupos=db.groups.filter(g=>g.teacherId===id).length;
+  if (!confirm('¿Eliminar permanentemente a '+t.name+'?'+(grupos?'\n\nEste maestro tiene '+grupos+' grupo(s) asignado(s). Su nombre se conservará en esos grupos y en las listas de calificaciones.':'\n\nSu nombre se conservará en los grupos y calificaciones existentes.'))) return;
+  // Desvinculamos el teacherId de los grupos pero conservamos el nombre de texto
+  db.groups.filter(g=>g.teacherId===id).forEach(g=>{ g.teacherId=null; });
+  db.teachers=db.teachers.filter(t=>t.id!==id);
+  saveDb(); toast('Maestro eliminado'); renderTeachers();
+}
+
+// STUDENT GRADES MODAL
+function openStudentGrades(sid){openStudentGradesModal(sid);}
+
+function renderAnalytics() {
+  const sel=document.getElementById('an-period-sel');
+  const prevPid=sel.value;
+  sel.innerHTML=db.periods.map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join('');
+  const pid=prevPid||sel.value||db.periods[0]?.id; if (!pid){document.getElementById('an-content').innerHTML='<div class="empty"><p>Sin periodos</p></div>';return;}
+  sel.value=pid;
+  const p=getPeriod(pid);
+  const enrolls=periodEnrolls(pid);
+  const studs=enrolls.map(e=>getStudent(e.studentId)).filter(Boolean);
+  const grps=periodGroups(pid);
+  const careerMap={};
+  studs.forEach(s=>{careerMap[s.career||'Sin carrera']=(careerMap[s.career||'Sin carrera']||0)+1;});
+  const maxC=Math.max(...Object.values(careerMap),1);
+  const careerBars=Object.entries(careerMap).sort((a,b)=>b[1]-a[1]).map(([c,n])=>
+    '<div class="bar-row"><div class="bar-lbl">'+c+'</div><div class="bar-track"><div class="bar-fill" style="width:'+(n/maxC*100)+'%;background:var(--accent)"></div></div><div class="bar-n">'+n+'</div></div>').join('');
+  const males=studs.filter(s=>s.sex==='M').length;
+  const females=studs.filter(s=>s.sex==='F').length;
+  const tot=studs.length||1;
+  const grpRows=grps.map(g=>{
+    const ge=groupEnrolls(g.id); const gs=ge.map(e=>getStudent(e.studentId)).filter(Boolean);
+    const finals=ge.map(e=>getFinal(e.studentId,pid)).filter(v=>v!==null).map(Number);
+    const avg=finals.length?(finals.reduce((a,b)=>a+b,0)/finals.length).toFixed(1):'—';
+    const careers=[...new Set(gs.map(s=>s.career).filter(Boolean))];
+    return '<tr><td style="font-weight:800">'+g.name+'</td><td>'+g.teacher+'</td><td style="font-weight:900">'+gs.length+'</td>'+
+      '<td>'+careers.map(c=>'<span class="badge b-blu" style="margin:1px">'+c+'</span>').join('')+'</td>'+
+      '<td>'+gs.filter(s=>s.sex==='M').length+' H / '+gs.filter(s=>s.sex==='F').length+' M</td>'+
+      '<td>'+gbadge(avg)+'</td></tr>';
+  }).join('')||'<tr><td colspan="6" class="empty"><p>Sin grupos</p></td></tr>';
+  document.getElementById('an-content').innerHTML=
+    '<div class="stats-row">'+
+      '<div class="stat-card c1"><div class="stat-lbl">Grupos</div><div class="stat-val">'+grps.length+'</div></div>'+
+      '<div class="stat-card c2"><div class="stat-lbl">Alumnos inscritos</div><div class="stat-val">'+studs.length+'</div></div>'+
+      '<div class="stat-card c3"><div class="stat-lbl">Hombres</div><div class="stat-val">'+males+'</div><div class="stat-sub">'+Math.round(males/tot*100)+'%</div></div>'+
+      '<div class="stat-card c4"><div class="stat-lbl">Mujeres</div><div class="stat-val">'+females+'</div><div class="stat-sub">'+Math.round(females/tot*100)+'%</div></div>'+
+    '</div>'+
+    '<div class="an-grid">'+
+      '<div class="an-card"><div class="an-title">Por carrera</div>'+(careerBars||'<div style="color:var(--muted);font-size:13px">Sin datos</div>')+'</div>'+
+      '<div class="an-card"><div class="an-title">Por sexo</div>'+
+        '<div class="bar-row"><div class="bar-lbl">Hombres</div><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(males/tot*100)+'%;background:var(--accent)"></div></div><div class="bar-n">'+males+'</div></div>'+
+        '<div class="bar-row"><div class="bar-lbl">Mujeres</div><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(females/tot*100)+'%;background:#db2777"></div></div><div class="bar-n">'+females+'</div></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="card"><div class="card-hd"><span class="card-title">Detalle por grupo — '+p.name+'</span></div>'+
+      '<table><thead><tr><th>Grupo</th><th>Maestro</th><th>Alumnos</th><th>Carreras</th><th>Sexo</th><th>Promedio</th></tr></thead><tbody>'+grpRows+'</tbody></table></div>';
+}
+
+// REPORT
+function renderReport() {
+  const pf=document.getElementById('report-period-sel').value;
+  document.getElementById('report-period-sel').innerHTML='<option value="">Todos los periodos</option>'+db.periods.map(p=>'<option value="'+p.id+'"'+(pf===p.id?' selected':'')+'>'+p.name+'</option>').join('');
+  let enrolls=pf?db.enrollments.filter(e=>e.periodId===pf):db.enrollments;
+  document.getElementById('report-tbody').innerHTML=enrolls.map(e=>{
+    const s=getStudent(e.studentId); if (!s) return '';
+    const grp=getGroup(e.groupId); const p=getPeriod(e.periodId); const f=getFinal(s.id,e.periodId,e.groupId);
+    return '<tr>'+
+      '<td>'+s.matricula+'</td><td>'+fullName(s)+'</td><td>'+s.sex+'</td><td>'+(s.career||'')+'</td>'+
+      '<td>'+(p?.name||'')+'</td><td>'+(grp?.name||'')+'</td><td>'+(grp?.teacher||'')+'</td>'+
+      '<td>'+(f!==null?f:'')+'</td><td>'+(f===null?'Sin calif':parseFloat(f)>=70?'Aprobado':'Reprobado')+'</td></tr>';
+  }).filter(Boolean).join('')||'<tr><td colspan="9" class="empty"><p>Sin datos</p></td></tr>';
+}
+function exportCSV() {
+  const pf=document.getElementById('report-period-sel').value;
+  let enrolls=pf?db.enrollments.filter(e=>e.periodId===pf):db.enrollments;
+  const rows=[['Matrícula','Nombre','Sexo','Carrera','Periodo','Grupo','Maestro','Calificación Final','Estado']];
+  enrolls.forEach(e=>{
+    const s=getStudent(e.studentId); if (!s) return;
+    const grp=getGroup(e.groupId); const p=getPeriod(e.periodId); const f=getFinal(s.id,e.periodId,e.groupId);
+    rows.push([s.matricula,fullName(s),s.sex==='M'?'Hombre':'Mujer',s.career||'',p?.name||'',grp?.name||'',grp?.teacher||'',f!==null?f:'',f===null?'Sin calif':parseFloat(f)>=70?'Aprobado':'Reprobado']);
+  });
+  // UTF-8 BOM (\uFEFF) para que Excel abra con acentos y Ñ correctamente
+  const csv='\uFEFF'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  const fname=pf?(getPeriod(pf)?.name||'reporte'):'todos_periodos';
+  a.download='clerecords_'+fname+'.csv';a.click();toast('CSV exportado');
+}
+
+function exportGroupPDF(gid) {
+  const grp=getGroup(gid); if (!grp) return;
+  const p=getPeriod(grp.periodId);
+  const enrolls=groupEnrolls(gid).sort((a,b)=>{ const sa=getStudent(a.studentId); const sb=getStudent(b.studentId); if(!sa||!sb) return 0; const ka=(sa.ap||'')+' '+(sa.am||'')+' '+(sa.nombre||''); const kb=(sb.ap||'')+' '+(sb.am||'')+' '+(sb.nombre||''); return ka.localeCompare(kb,'es',{sensitivity:'base'}); });
+  const students=enrolls.map(e=>{
+    const s=getStudent(e.studentId); if (!s) return null;
+    const f=getFinal(s.id,grp.periodId,gid);
+    return {...s, final:f, fullname:fullName(s)};
+  }).filter(Boolean).sort((a,b)=>a.fullname.localeCompare(b.fullname,'es'));
+  const fecha=new Date().toLocaleDateString('es-MX',{year:'numeric',month:'long',day:'numeric'});
+  const filas=students.map((s,i)=>`<tr>
+    <td>${i+1}</td>
+    <td>${s.matricula}</td>
+    <td>${s.fullname}</td>
+    <td>${s.sex==='M'?'H':'M'}</td>
+    <td>${s.career||'—'}</td>
+    <td style="text-align:center">${s.final!==null?s.final:'—'}</td>
+  </tr>`).join('');
+  const pdfHtml=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;color:#000;background:#fff;padding:2cm}
+    .titulo{font-size:15px;font-weight:bold;text-align:center;margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px}
+    .info{margin-bottom:16px;border:1px solid #000}
+    .info table{width:100%;border-collapse:collapse}
+    .info td{padding:5px 10px;font-size:12px;border:1px solid #ccc}
+    .info td:first-child{font-weight:bold;width:140px;background:#f5f5f5}
+    table.lista{width:100%;border-collapse:collapse;margin-top:4px}
+    table.lista th{border:1px solid #000;padding:6px 8px;font-size:11px;text-align:left;background:#f0f0f0;text-transform:uppercase}
+    table.lista td{border:1px solid #ccc;padding:5px 8px;font-size:11.5px}
+    table.lista td:first-child,table.lista td:nth-child(6){text-align:center}
+    table.lista tr:nth-child(even) td{background:#fafafa}
+    .footer{margin-top:24px;display:flex;justify-content:flex-end}
+    .firma{margin-top:40px;border-top:1px solid #000;width:220px;text-align:center;padding-top:4px;font-size:11px}
+    @media print{body{padding:1.5cm}@page{margin:1cm}}
+  </style></head><body>
+  <div class="titulo">Lista de Calificaciones</div>
+  <div class="info"><table>
+    <tr><td>Maestro</td><td>${grp.teacher}</td></tr>
+    <tr><td>Grupo</td><td>${grp.name}</td></tr>
+    <tr><td>Periodo</td><td>${p?.name||'—'}</td></tr>
+  </table></div>
+  <table class="lista">
+    <thead><tr><th>#</th><th>N° Control</th><th>Nombre</th><th>Sexo</th><th>Carrera</th><th>Calificación</th></tr></thead>
+    <tbody>${filas}</tbody>
+  </table>
+  <div class="footer"><div class="firma">Firma del Maestro</div></div>
+  <script>window.onload=()=>{window.print();}<\/script>
+  
+<script>
+window.afterGoogleLogin = function(){};
+
+async function googleLogin(){
+  try{
+    await signInWithPopup(
+      window._fbAuthObj,
+      window._fbProvider
+    );
+  }catch(err){
+    console.error(err);
+    alert('No fue posible iniciar sesión.');
+  }
+}
+
+async function doLogout(){
+  try{
+    await signOut(window._fbAuthObj);
+    location.reload();
+  }catch(err){
+    console.error(err);
+  }
+}
+</script>
+
+</body></html>`;
+  const win=window.open('','_blank','width=900,height=700');
+  win.document.write(pdfHtml);
+  win.document.close();
+}
+
+// BACKUP / RESTORE
+function backupData() {
+  const blob=new Blob([JSON.stringify({db,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='clerecords_respaldo_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  toast('Respaldo guardado ✓');
+}
+function restoreData(event) {
+  const file=event.target.files[0]; if (!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try {
+      const payload=JSON.parse(e.target.result);
+      if (!payload.db){toast('Archivo inválido','err');return;}
+      if (!confirm('¿Restaurar respaldo del '+(payload.exportedAt?.slice(0,10)||'archivo')+'? Esto reemplazará todos los datos actuales.')) return;
+      db=payload.db; if (!db.extras) db.extras=[];
+      saveDb(); renderDashboard(); toast('Datos restaurados ✓');
+    } catch(err){toast('Error al leer el archivo','err');}
+  };
+  reader.readAsText(file); event.target.value='';
+}
+
+// IMPORT CSV
+let importRows=[];
+function openImportModal(){document.getElementById('import-preview').innerHTML='';document.getElementById('btn-do-import').style.display='none';document.getElementById('import-file').value='';importRows=[];openModal('modal-import');}
+function parseSex(v) {
+  const s=v.trim().toUpperCase();
+  // H = Hombre, M = Mujer, F = también Femenino (por compatibilidad)
+  if (s==='F'||s==='FEMENINO'||s==='MUJER') return 'F';
+  if (s==='H'||s==='HOMBRE'||s==='MASCULINO') return 'M';
+  // Si es 'M' solo, asumimos Mujer (porque H=Hombre en español mexicano)
+  if (s==='M') return 'F';
+  return 'M'; // default
+}
+function mapHdr(h){
+  const s=h.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if (s.includes('control')||s==='n.'||s.includes('matricula')) return 'matricula';
+  if (s==='nombre'||s==='name') return 'nombre';
+  if (s==='ap'||s.includes('paterno')) return 'ap';
+  if (s==='am'||s.includes('materno')) return 'am';
+  if (s==='sexo'||s==='sex'||s==='genero') return 'sex';
+  if (s.includes('carrera')||s.includes('modalidad')||s.includes('programa')) return 'career';
+  if (s.includes('correo')||s.includes('email')||s.includes('mail')) return 'email';
+  return null;
+}
+function parseCSV(text){
+  const lines=text.trim().split(/\r?\n/); if (lines.length<2) return [];
+  // Detectar delimitador contando ocurrencias en la primera línea
+  const first=lines[0];
+  const countComma=(first.match(/,/g)||[]).length;
+  const countSemi=(first.match(/;/g)||[]).length;
+  const countTab=(first.match(/\t/g)||[]).length;
+  let delim=',';
+  if (countSemi>countComma&&countSemi>countTab) delim=';';
+  else if (countTab>countComma&&countTab>countSemi) delim='\t';
+  const parseLine=line=>{const res=[];let cur='';let inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){inQ=!inQ;}else if(c===delim&&!inQ){res.push(cur.trim());cur='';}else{cur+=c;}}res.push(cur.trim());return res;};
+  const hdrs=parseLine(lines[0]).map(h=>h.replace(/^"|"$/g,'').trim());
+  const mapped=hdrs.map(mapHdr);
+  // Guardar info de diagnóstico
+  parseCSV._lastDelim=delim;
+  parseCSV._lastHeaders=hdrs;
+  parseCSV._lastMapped=mapped;
+  const rows=[];
+  for(let i=1;i<lines.length;i++){
+    if(!lines[i].trim())continue;
+    const vals=parseLine(lines[i]).map(v=>v.replace(/^"|"$/g,'').trim());
+    const row={};
+    mapped.forEach((k,j)=>{if(k)row[k]=vals[j]||'';});
+    if(row.matricula||row.nombre)rows.push(row);
+  }
+  return rows;
+}
+function previewImport(event){
+  const file=event.target.files[0]; if (!file) return;
+  // Intentar detectar encoding leyendo como binario primero
+  const binReader=new FileReader();
+  binReader.onload=e=>{
+    const arr=new Uint8Array(e.target.result);
+    // Detectar BOM UTF-8 (EF BB BF)
+    const hasUtf8Bom=arr[0]===0xEF&&arr[1]===0xBB&&arr[2]===0xBF;
+    // Detectar BOM UTF-16
+    const hasUtf16Bom=(arr[0]===0xFF&&arr[1]===0xFE)||(arr[0]===0xFE&&arr[1]===0xFF);
+    // Detectar caracteres Windows-1252: si hay bytes 0x80-0x9F o 0xA0-0xFF sin patrón UTF-8
+    let likelyLatin=false;
+    if (!hasUtf8Bom&&!hasUtf16Bom) {
+      for(let i=0;i<Math.min(arr.length,2000);i++){
+        if(arr[i]>=0x80&&arr[i]<=0x9F){likelyLatin=true;break;}
+        // Ñ en Windows-1252 = 0xD1, ñ = 0xF1
+        if(arr[i]===0xD1||arr[i]===0xF1){likelyLatin=true;break;}
+      }
+    }
+    const encoding=hasUtf8Bom?'UTF-8':likelyLatin?'windows-1252':'UTF-8';
+    const txtReader=new FileReader();
+    txtReader.onload=ev=>{
+      let text=ev.target.result;
+      if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
+      importRows=parseCSV(text);
+      const el=document.getElementById('import-preview');
+      if(!importRows.length){
+        const hdrs=parseCSV._lastHeaders||[];
+        const mapped=parseCSV._lastMapped||[];
+        const delim=parseCSV._lastDelim||',';
+        const delimName=delim==='\t'?'Tab':delim===';'?'Punto y coma (;)':'Coma (,)';
+        const colInfo=hdrs.map((h,i)=>'<li style="font-size:12px"><code>'+h+'</code> → '+(mapped[i]?'<span style="color:var(--accent2)">✓ '+mapped[i]+'</span>':'<span style="color:var(--danger)">no reconocida</span>')+'</li>').join('');
+        el.innerHTML='<div style="color:var(--danger);font-size:13px;padding:8px 0;font-weight:600">No se encontraron alumnos válidos.</div>'+
+          '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-top:8px;font-size:12.5px">'+
+          '<div style="font-weight:800;margin-bottom:6px">Diagnóstico:</div>'+
+          '<div style="margin-bottom:4px">Codificación detectada: <strong>'+encoding+'</strong> · Separador: <strong>'+delimName+'</strong></div>'+
+          '<div style="margin-bottom:4px">Columnas:</div><ul style="padding-left:16px">'+colInfo+'</ul>'+
+          '<div style="margin-top:8px;color:var(--muted)">Encabezados esperados: <em>N. DE CONTROL, NOMBRE, AP, AM, SEXO, CARRERA Y MODALIDAD</em></div>'+
+          '</div>';
+        document.getElementById('btn-do-import').style.display='none';return;
+      }
+      const prev=importRows.slice(0,5);
+      el.innerHTML='<div style="font-size:12.5px;color:var(--accent2);font-weight:800;margin-bottom:8px">✓ '+importRows.length+' alumnos detectados (codificación: '+encoding+')'+(importRows.length>5?' — mostrando primeros 5':'')+'</div>'+
+        '<div class="import-prev"><table><thead><tr><th>Matrícula</th><th>Nombre completo</th><th>Sexo</th><th>Carrera</th></tr></thead><tbody>'+
+        prev.map(r=>{const name=[r.nombre,r.ap,r.am].filter(Boolean).join(' ');const sex=parseSex(r.sex||'');return '<tr><td>'+(r.matricula||'—')+'</td><td>'+(name||'—')+'</td><td>'+sex+'</td><td>'+(r.career||'—')+'</td></tr>';}).join('')+
+        '</tbody></table></div>';
+      document.getElementById('btn-do-import').style.display='inline-flex';
+    };
+    txtReader.readAsText(file, encoding);
+  };
+  binReader.readAsArrayBuffer(file);
+}
+function confirmImport(){
+  if (!importRows.length) return;
+  let added=0, duplicates=0, nomat=0, failed=0;
+  importRows.forEach(r=>{
+    const mat=(r.matricula||'').trim();
+    if (!mat){nomat++;return;}
+    if (db.students.find(s=>s.matricula===mat)){duplicates++;return;}
+    const sex=parseSex(r.sex||'');
+    db.students.push({id:uid(),nombre:(r.nombre||'').trim(),ap:(r.ap||'').trim(),am:(r.am||'').trim(),matricula:mat,career:(r.career||'').trim(),sex,email:(r.email||'').trim()});
+    added++;
+  });
+  const ok=saveDb();
+  if (!ok) { failed=added; added=0; }
+  closeModal('modal-import');
+  let msg=added+' alumnos importados';
+  if (duplicates) msg+=', '+duplicates+' duplicados omitidos';
+  if (nomat) msg+=', '+nomat+' sin matrícula omitidos';
+  if (failed) msg=' Error: almacenamiento lleno. Haz un Respaldo primero.';
+  toast(msg, failed?'err':'');
+  renderRoster();
+}
+
+// UTILS
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){
+  document.getElementById(id).classList.remove('open','on-top');
+}
+function toast(msg,type=''){
+  const el=document.createElement('div');
+  el.className='toast'+(type?' '+type:'');
+  el.innerHTML='<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="'+(type==='err'?'M6 18L18 6M6 6l12 12':'M5 13l4 4L19 7')+'"/></svg>'+msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>el.remove(),3200);
+}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+
+// USER MANAGEMENT
+function renderUsersTable() {
+  const auth=loadAuth();
+  document.getElementById('users-tbody').innerHTML=auth.users.map(u=>{
+    const t=u.teacherId?db.teachers.find(t=>t.id===u.teacherId):null;
+    const isMe=u.username===currentUser?.username;
+    return '<tr>'+
+      '<td style="font-weight:800">'+u.username+(isMe?' <span class="badge b-blu" style="font-size:10px">Tú</span>':'')+'</td>'+
+      '<td><span class="badge '+(u.role==='admin'?'b-pur':'b-neu')+'">'+( u.role==='admin'?'Administrador':'Maestro')+'</span></td>'+
+      '<td>'+(t?t.name:'<span style="color:var(--muted)">—</span>')+'</td>'+
+      '<td><div class="acts">'+
+        '<button class="btn btn-out btn-sm" onclick="editUserModal(\''+u.username+'\')">Editar</button>'+
+        (!isMe?'<button class="btn btn-del btn-sm" onclick="deleteUser(\''+u.username+'\')">✕</button>':'')+
+      '</div></td>'+
+    '</tr>';
+  }).join('')||'<tr><td colspan="4" class="empty"><p>Sin usuarios</p></td></tr>';
+}
+function openAddUserModal() {
+  document.getElementById('modal-user-title').textContent='Nuevo Usuario';
+  document.getElementById('u-edit-username').value='';
+  document.getElementById('u-username').value='';
+  document.getElementById('u-pass').value='';
+  document.getElementById('u-role').value='teacher';
+  document.getElementById('u-pass-hint').style.display='none';
+  populateTeacherLink(''); toggleUserTeacher();
+  openModal('modal-user');
+}
+function editUserModal(username) {
+  const auth=loadAuth();
+  const u=auth.users.find(u=>u.username===username); if (!u) return;
+  document.getElementById('modal-user-title').textContent='Editar Usuario';
+  document.getElementById('u-edit-username').value=username;
+  document.getElementById('u-username').value=username;
+  document.getElementById('u-pass').value='';
+  document.getElementById('u-role').value=u.role;
+  document.getElementById('u-pass-hint').style.display='';
+  populateTeacherLink(u.teacherId||''); toggleUserTeacher();
+  openModal('modal-user');
+}
+function populateTeacherLink(selectedId) {
+  document.getElementById('u-teacher-link').innerHTML=
+    '<option value="">— Sin vincular —</option>'+
+    db.teachers.map(t=>'<option value="'+t.id+'"'+(t.id===selectedId?' selected':'')+'>'+t.name+'</option>').join('');
+}
+function toggleUserTeacher() {
+  const role=document.getElementById('u-role').value;
+  document.getElementById('u-teacher-wrap').style.display=role==='teacher'?'block':'none';
+}
+function saveUser() {
+  const username=document.getElementById('u-username').value.trim();
+  const pass=document.getElementById('u-pass').value;
+  const role=document.getElementById('u-role').value;
+  const teacherId=document.getElementById('u-teacher-link').value||null;
+  const editingUsername=document.getElementById('u-edit-username').value;
+  if (!username){toast('El nombre de usuario es requerido','err');return;}
+  const auth=loadAuth();
+  if (!editingUsername) {
+    if (!pass){toast('La contraseña es requerida para nuevos usuarios','err');return;}
+    if (auth.users.find(u=>u.username===username)){toast('Ese nombre de usuario ya existe','err');return;}
+    auth.users.push({username,passHash:hashPass(pass),role,teacherId});
+    toast('Usuario creado');
+  } else {
+    const u=auth.users.find(u=>u.username===editingUsername); if(!u) return;
+    u.username=username; u.role=role; u.teacherId=teacherId;
+    if (pass) u.passHash=hashPass(pass);
+    if (editingUsername===currentUser?.username) {
+      currentUser.username=username; currentUser.role=role;
+      document.getElementById('hdr-user-info').textContent=username;
+      try { sessionStorage.setItem('cle_session', JSON.stringify(currentUser)); } catch(e) {}
+    }
+    toast('Usuario actualizado');
+  }
+  saveAuth(auth); closeModal('modal-user'); renderUsersTable();
+}
+function deleteUser(username) {
+  if (!confirm('¿Eliminar el usuario "'+username+'"?')) return;
+  const auth=loadAuth();
+  auth.users=auth.users.filter(u=>u.username!==username);
+  saveAuth(auth); toast('Usuario eliminado'); renderUsersTable();
+}
+function autoCreateUserFromTeacher(teacher) {
+  const username=generateUsername(teacher.name);
+  const auth=loadAuth();
+  if (auth.users.find(u=>u.username===username)) return;
+  const initPass=username+'123';
+  if (confirm('¿Crear usuario "'+username+'" para '+teacher.name+'?\nContraseña inicial: '+initPass)) {
+    auth.users.push({username,passHash:hashPass(initPass),role:'teacher',teacherId:teacher.id});
+    saveAuth(auth);
+    toast('Usuario "'+username+'" creado. Contraseña: '+initPass);
+    renderUsersTable();
+  }
+}
+
+// Override renderTeachers to also render users table
+const _origRenderTeachers = renderTeachers;
+renderTeachers = function() {
+  _origRenderTeachers();
+  if (document.getElementById('users-tbody')) renderUsersTable();
+}
+
+// Override saveTeacher to offer user creation for new teachers
+const _origSaveTeacher = saveTeacher;
+saveTeacher = function() {
+  const eid=document.getElementById('t-edit-id').value;
+  const name=document.getElementById('t-name').value.trim();
+  if (!eid && name) {
+    const beforeCount=db.teachers.length;
+    _origSaveTeacher();
+    if (db.teachers.length > beforeCount) {
+      const newTeacher=db.teachers[db.teachers.length-1];
+      autoCreateUserFromTeacher(newTeacher);
+    }
+  } else {
+    _origSaveTeacher();
+  }
+}
+
+// ============================================================
+// GRUPOS EN FORMACIÓN
+// formation[] → {id, name, periodId, teacherId, teacher, subject, status:'draft'|'authorized'}
+// formation_periods[] → {id, name, start, end}
+// formation_enrollments[] → {studentId, groupId, paid:bool, payDate, notes}
+// ============================================================
+
+function fmPeriods() { return db.formation_periods || []; }
+function fmGroups(periodId) { return (db.formation_groups||[]).filter(g=>!periodId||g.periodId===periodId); }
+function fmEnrolls(groupId) { return (db.formation_enrollments||[]).filter(e=>!groupId||e.groupId===groupId); }
+function fmGetGroup(id) { return (db.formation_groups||[]).find(g=>g.id===id); }
+function fmGetPeriod(id) { return (db.formation_periods||[]).find(p=>p.id===id); }
+function initFormationDb() {
+  if (!db.formation_periods) db.formation_periods=[];
+  if (!db.formation_groups) db.formation_groups=[];
+  if (!db.formation_enrollments) db.formation_enrollments=[];
+}
+
+let fmSelectedPeriodId=null, fmSelectedGroupId=null;
+
+function renderFormation() {
+  const periods=fmPeriods();
+  const groups=db.formation_groups||[];
+  const enrolls=db.formation_enrollments||[];
+  document.getElementById('formation-sub').textContent=periods.length+' periodo(s) · '+groups.length+' grupo(s) en formación';
+  // Update badge in sidebar
+  const badge=document.getElementById('formation-badge');
+  if (groups.length) { badge.textContent=groups.length; badge.style.display=''; }
+  else badge.style.display='none';
+
+  const sorted=[...periods].sort((a,b)=>b.name.localeCompare(a.name,'es'));
+  if (!fmSelectedPeriodId||!periods.find(p=>p.id===fmSelectedPeriodId)) fmSelectedPeriodId=sorted[0]?.id||null;
+
+  // Period list
+  const pList=document.getElementById('fm-period-list');
+  if (!sorted.length) {
+    pList.innerHTML='<div class="pe-empty">Sin periodos.<br><br><button class="btn btn-dark btn-sm" onclick="openAddFormationPeriodModal()">+ Crear periodo</button></div>';
+    document.getElementById('fm-group-list').innerHTML='<div class="pe-empty">—</div>';
+    document.getElementById('fm-detail-content').innerHTML='';
+    return;
+  }
+  pList.innerHTML=sorted.map(p=>{
+    const grps=fmGroups(p.id);
+    const active=fmSelectedPeriodId===p.id;
+    return '<div class="pe-period-item'+(active?' active':'')+'" onclick="fmSelectPeriod(\''+p.id+'\')">'+
+      '<div style="flex:1;min-width:0">'+
+        '<div class="pe-period-name">'+p.name+'</div>'+
+        '<div class="pe-period-sub">'+grps.length+' grupos</div>'+
+      '</div>'+
+      '<div class="pe-period-acts">'+
+        '<button class="btn btn-del" style="padding:3px 7px;font-size:11px" onclick="event.stopPropagation();deleteFmPeriod(\''+p.id+'\')" title="Eliminar">✕</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  renderFmGroupList();
+}
+
+function fmSelectPeriod(pid) { fmSelectedPeriodId=pid; fmSelectedGroupId=null; renderFormation(); }
+function fmSelectGroup(gid) { fmSelectedGroupId=gid; renderFmGroupList(); renderFmDetail(); }
+
+function renderFmGroupList() {
+  const el=document.getElementById('fm-group-list');
+  const titleEl=document.getElementById('fm-groups-title');
+  if (!fmSelectedPeriodId) { el.innerHTML='<div class="pe-empty">Selecciona un periodo</div>'; return; }
+  const p=fmGetPeriod(fmSelectedPeriodId);
+  titleEl.textContent='Grupos — '+(p?.name||'');
+  const grps=fmGroups(fmSelectedPeriodId);
+  if (!grps.length) {
+    el.innerHTML='<div class="pe-empty">Sin grupos.<br><br>'+
+      '<button class="btn btn-out btn-sm" onclick="openAddFormationGroupModalForPeriod(\''+fmSelectedPeriodId+'\')">+ Nuevo grupo</button></div>';
+    document.getElementById('fm-detail-content').innerHTML='<div class="pe-empty" style="padding:40px">Sin grupos</div>';
+    return;
+  }
+  if (!fmSelectedGroupId||!grps.find(g=>g.id===fmSelectedGroupId)) {
+    fmSelectedGroupId=grps[0].id;
+  }
+  renderFmDetail();
+  el.innerHTML=grps.map(g=>{
+    const en=fmEnrolls(g.id);
+    const paid=en.filter(e=>e.paid).length;
+    const active=fmSelectedGroupId===g.id;
+    const authBadge=g.authorized?'<span style="font-size:9px;background:#16a34a;color:#fff;padding:1px 5px;border-radius:99px;font-weight:800">✓ Autorizado</span>':'';
+    return '<div class="pe-group-item'+(active?' active':'')+'" onclick="fmSelectGroup(\''+g.id+'\')">'+
+      '<div class="pe-group-dot" style="background:'+(g.authorized?'#16a34a':'#f59e0b')+'"></div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div class="pe-group-name">'+g.name+' '+authBadge+'</div>'+
+        '<div class="pe-group-sub">'+(g.level?'Niv.'+g.level+' · ':'')+g.teacher+' · '+en.length+' alumnos · '+paid+' pagados</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function renderFmDetail() {
+  const el=document.getElementById('fm-detail-content');
+  const titleEl=document.getElementById('fm-detail-title');
+  if (!fmSelectedGroupId) { el.innerHTML='<div class="pe-empty" style="padding:40px">Selecciona un grupo</div>'; return; }
+  const g=fmGetGroup(fmSelectedGroupId); if (!g) return;
+  const p=fmGetPeriod(g.periodId);
+  titleEl.textContent=g.name;
+  const enrolls=fmEnrolls(g.id).sort((a,b)=>{ const sa=getStudent(a.studentId); const sb=getStudent(b.studentId); if(!sa||!sb) return 0; const ka=(sa.ap||'')+' '+(sa.am||'')+' '+(sa.nombre||''); const kb=(sb.ap||'')+' '+(sb.am||'')+' '+(sb.nombre||''); return ka.localeCompare(kb,'es',{sensitivity:'base'}); });
+  const paid=enrolls.filter(e=>e.paid).length;
+  const unpaid=enrolls.length-paid;
+
+  const studentRows=enrolls.map(e=>{
+    const s=getStudent(e.studentId); if(!s) return '';
+    const fn=fullName(s);
+    const paidColor=e.paid?'var(--accent2)':'var(--danger)';
+    const paidLabel=e.paid?'✓ Pagado':'✗ Pendiente';
+    return '<div class="pe-student-row">'+
+      '<div class="av av-sm" style="background:'+avCol(fn)+'18;color:'+avCol(fn)+'">'+inits(fn)+'</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+fn+'</div>'+
+        '<div style="font-size:11px;color:var(--muted);font-weight:500">'+s.matricula+'</div>'+
+      '</div>'+
+      '<span style="font-size:11.5px;font-weight:800;color:'+paidColor+';cursor:pointer;min-width:80px;text-align:center" onclick="toggleFmPaid(\''+e.studentId+'\',\''+g.id+'\')">'+paidLabel+'</span>'+
+      '<button class="btn btn-del" style="padding:3px 7px;font-size:11px;margin-left:6px" onclick="removeFmEnroll(\''+e.studentId+'\',\''+g.id+'\')">✕</button>'+
+    '</div>';
+  }).filter(Boolean).join('');
+
+  const authorizeBtn=g.authorized
+    ? '<button class="btn btn-out btn-sm" onclick="deauthorizeFmGroup(\''+g.id+'\')">↩ Desautorizar</button>'
+    : '<button class="btn btn-grn btn-sm" onclick="authorizeFmGroup(\''+g.id+'\')">✓ Autorizar y mover a Periodos</button>';
+
+  const portalInfo = g.published
+    ? '<div style="background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;">'+
+        '<span style="font-weight:800;color:var(--accent)">🌐 Publicado en el portal</span>'+
+        (g.schedule?' &nbsp;·&nbsp; 🕐 '+g.schedule:'')+
+        (g.capacity?' &nbsp;·&nbsp; 👥 Cupo: '+enrolls.length+'/'+g.capacity:'')+
+        (g.refUrl?' &nbsp;·&nbsp; <a href="'+g.refUrl+'" target="_blank" style="color:var(--accent)">Referencia bancaria ↗</a>':'')+
+      '</div>'
+    : '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:12px;color:var(--muted);font-weight:600;">⭕ No publicado en el portal</div>';
+
+  el.innerHTML='<div class="pe-detail-inner">'+
+    '<div class="pe-detail-header">'+
+      '<div class="pe-detail-name">'+g.name+(g.authorized?' <span style="font-size:13px;background:#16a34a;color:#fff;padding:2px 8px;border-radius:99px;font-weight:700;vertical-align:middle">Autorizado</span>':'')+'</div>'+
+      '<div class="pe-detail-meta">'+g.teacher+(g.subject?' · '+g.subject:'')+(g.level?' · <span style="background:var(--accent);color:#fff;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px">Nivel '+g.level+'</span>':'')+(p?' · '+p.name:'')+'</div>'+
+    '</div>'+
+    portalInfo+
+    '<div class="pe-detail-stats">'+
+      '<div class="pe-detail-stat"><div class="pe-detail-stat-val">'+enrolls.length+(g.capacity?'<span style="font-size:13px;color:var(--muted)">/'+g.capacity+'</span>':'')+'</div><div class="pe-detail-stat-lbl">Alumnos</div></div>'+
+      '<div class="pe-detail-stat"><div class="pe-detail-stat-val" style="color:var(--accent2)">'+paid+'</div><div class="pe-detail-stat-lbl">Pagados</div></div>'+
+      '<div class="pe-detail-stat"><div class="pe-detail-stat-val" style="color:var(--danger)">'+unpaid+'</div><div class="pe-detail-stat-lbl">Pendientes</div></div>'+
+    '</div>'+
+    '<div class="pe-detail-acts">'+
+      '<button class="btn btn-dark btn-sm" onclick="openFormationEnrollModalForGroup(\''+g.id+'\')">+ Agregar alumno</button>'+
+      '<button class="btn btn-out btn-sm" onclick="editFmGroupModal(\''+g.id+'\')">Editar grupo</button>'+
+      authorizeBtn+
+      '<button class="btn btn-del btn-sm" onclick="deleteFmGroup(\''+g.id+'\')">Eliminar grupo</button>'+
+    '</div>'+
+    '<div style="font-weight:800;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Lista de alumnos</div>'+
+    (studentRows||'<div style="color:var(--muted);font-size:13px;font-weight:600;padding:16px 0;text-align:center">Sin alumnos — <button class="btn btn-out btn-sm" onclick="openFormationEnrollModalForGroup(\''+g.id+'\')">Agregar</button></div>')+
+  '</div>';
+}
+
+// ── TOGGLE PAID ───────────────────────────────────────────────────────────
+function toggleFmPaid(sid, gid) {
+  const e=db.formation_enrollments.find(e=>e.studentId===sid&&e.groupId===gid); if(!e) return;
+  e.paid=!e.paid;
+  saveDb(); renderFmDetail(); renderFmGroupList();
+}
+
+// ── REMOVE ENROLL ─────────────────────────────────────────────────────────
+function removeFmEnroll(sid, gid) {
+  const s=getStudent(sid);
+  if (!confirm('¿Quitar a '+fullName(s)+' de este grupo?')) return;
+  db.formation_enrollments=db.formation_enrollments.filter(e=>!(e.studentId===sid&&e.groupId===gid));
+  saveDb(); toast(fullName(s)+' quitado'); renderFmDetail(); renderFmGroupList();
+}
+
+// ── AUTHORIZE ─────────────────────────────────────────────────────────────
+function authorizeFmGroup(gid) {
+  const fg=fmGetGroup(gid); if (!fg) return;
+  const fp=fmGetPeriod(fg.periodId);
+  const enrolls=fmEnrolls(gid);
+  const unpaid=enrolls.filter(e=>!e.paid).length;
+  let msg='¿Autorizar el grupo "'+fg.name+'" y moverlo a Periodos y Grupos?';
+  if (unpaid) msg+='\n\n⚠️ '+unpaid+' alumno(s) aún tienen pago pendiente.';
+  if (!confirm(msg)) return;
+
+  // Find or create the corresponding period in main db
+  let targetPeriod=db.periods.find(p=>p.name===fp.name);
+  if (!targetPeriod) {
+    targetPeriod={id:uid(),name:fp.name,start:fp.start||'',end:fp.end||''};
+    db.periods.push(targetPeriod);
+  }
+  // Create group in main db
+  const newGroup={id:uid(),periodId:targetPeriod.id,name:fg.name,teacher:fg.teacher,teacherId:fg.teacherId||null,subject:fg.subject||''};
+  db.groups.push(newGroup);
+  // Move enrollments
+  enrolls.forEach(e=>{
+    if (!db.enrollments.find(en=>en.studentId===e.studentId&&en.groupId===newGroup.id)) {
+      db.enrollments.push({studentId:e.studentId,groupId:newGroup.id,periodId:targetPeriod.id});
+    }
+  });
+  // Mark as authorized in formation (keep record)
+  fg.authorized=true; fg.authorizedGroupId=newGroup.id;
+  saveDb();
+  toast('✓ Grupo "'+fg.name+'" autorizado y movido a Periodos y Grupos');
+  renderFormation(); renderPeriods(); renderDashboard();
+}
+
+function deauthorizeFmGroup(gid) {
+  const fg=fmGetGroup(gid); if (!fg) return;
+  if (!confirm('¿Desautorizar este grupo? No se eliminarán los datos del apartado de Periodos y Grupos.')) return;
+  fg.authorized=false; fg.authorizedGroupId=null;
+  saveDb(); toast('Grupo desautorizado'); renderFmDetail(); renderFmGroupList();
+}
+
+// ── CRUD PERIODS ──────────────────────────────────────────────────────────
+function openAddFormationPeriodModal() {
+  const name=prompt('Nombre del periodo (ej. 2025-1):');
+  if (!name||!name.trim()) return;
+  db.formation_periods.push({id:uid(),name:name.trim(),start:'',end:''});
+  saveDb(); toast('Periodo creado'); renderFormation();
+}
+function deleteFmPeriod(id) {
+  const p=fmGetPeriod(id);
+  const grps=fmGroups(id);
+  if (!confirm('¿Eliminar el periodo "'+p.name+'"?'+(grps.length?' Se eliminarán también sus '+grps.length+' grupo(s).':''))) return;
+  const gids=grps.map(g=>g.id);
+  db.formation_periods=db.formation_periods.filter(p=>p.id!==id);
+  db.formation_groups=db.formation_groups.filter(g=>g.periodId!==id);
+  db.formation_enrollments=db.formation_enrollments.filter(e=>!gids.includes(e.groupId));
+  if (fmSelectedPeriodId===id) fmSelectedPeriodId=null;
+  saveDb(); toast('Periodo eliminado'); renderFormation();
+}
+
+// ── CRUD GROUPS ───────────────────────────────────────────────────────────
+function openAddFormationGroupModal() {
+  if (!fmSelectedPeriodId) { toast('Selecciona un periodo primero','err'); return; }
+  openAddFormationGroupModalForPeriod(fmSelectedPeriodId);
+}
+function openAddFormationGroupModalForPeriod(pid) {
+  document.getElementById('fg-edit-id').value='';
+  document.getElementById('fg-period-id').value=pid;
+  document.getElementById('fg-modal-title').textContent='Nuevo Grupo';
+  ['fg-name','fg-subject','fg-schedule','fg-capacity','fg-ref-url','fg-description'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  const lvl=document.getElementById('fg-level'); if(lvl) lvl.value='';
+  const mod=document.getElementById('fg-modality'); if(mod) mod.value='';
+  document.getElementById('fg-published').checked=false;
+  populateFgTeacher('');
+  openModal('modal-fg');
+}
+function editFmGroupModal(gid) {
+  const g=fmGetGroup(gid); if (!g) return;
+  document.getElementById('fg-edit-id').value=gid;
+  document.getElementById('fg-period-id').value=g.periodId;
+  document.getElementById('fg-modal-title').textContent='Editar Grupo';
+  document.getElementById('fg-name').value=g.name||'';
+  document.getElementById('fg-subject').value=g.subject||'';
+  document.getElementById('fg-schedule').value=g.schedule||'';
+  document.getElementById('fg-capacity').value=g.capacity||'';
+  const lvlEl=document.getElementById('fg-level'); if(lvlEl) lvlEl.value=g.level||'';
+  const modEl=document.getElementById('fg-modality'); if(modEl) modEl.value=g.modality||'';
+  document.getElementById('fg-ref-url').value=g.refUrl||'';
+  document.getElementById('fg-description').value=g.description||'';
+  document.getElementById('fg-published').checked=!!g.published;
+  populateFgTeacher(g.teacherId||'');
+  openModal('modal-fg');
+}
+function populateFgTeacher(selectedId) {
+  const sel=document.getElementById('fg-teacher-sel');
+  const active=db.teachers.filter(t=>!t.archived);
+  sel.innerHTML='<option value="">— Sin asignar —</option>'+
+    active.map(t=>'<option value="'+t.id+'"'+(t.id===selectedId?' selected':'')+'>'+t.name+'</option>').join('')+
+    '<option value="__manual">+ Escribir nombre</option>';
+  const manualWrap=document.getElementById('fg-teacher-manual-wrap');
+  if(manualWrap) manualWrap.style.display='none';
+  document.getElementById('fg-teacher-name').value='';
+}
+function onFgTeacherChange() {
+  const v=document.getElementById('fg-teacher-sel').value;
+  const wrap=document.getElementById('fg-teacher-manual-wrap');
+  if(wrap) wrap.style.display=v==='__manual'?'block':'none';
+}
+function saveFmGroup() {
+  const name=document.getElementById('fg-name').value.trim();
+  if (!name){toast('El nombre es requerido','err');return;}
+  const pid=document.getElementById('fg-period-id').value;
+  const eid=document.getElementById('fg-edit-id').value;
+  const selV=document.getElementById('fg-teacher-sel').value;
+  let teacher='', teacherId=null;
+  if (selV==='__manual') {
+    teacher=document.getElementById('fg-teacher-name').value.trim();
+  } else if (selV) {
+    const t=db.teachers.find(t=>t.id===selV);
+    teacher=t?.name||''; teacherId=selV;
+  }
+  const data={
+    name, subject:document.getElementById('fg-subject').value.trim(),
+    teacher, teacherId,
+    schedule:document.getElementById('fg-schedule').value.trim(),
+    capacity:parseInt(document.getElementById('fg-capacity').value)||0,
+    level:parseInt(document.getElementById('fg-level')?.value)||0,
+    modality:document.getElementById('fg-modality')?.value||'',
+    refUrl:document.getElementById('fg-ref-url').value.trim(),
+    description:document.getElementById('fg-description').value.trim(),
+    published:document.getElementById('fg-published').checked,
+  };
+  if (eid) {
+    Object.assign(fmGetGroup(eid), data);
+    toast('Grupo actualizado');
+  } else {
+    db.formation_groups.push({...data, id:uid(), periodId:pid, authorized:false});
+    if (!fmSelectedPeriodId) fmSelectedPeriodId=pid;
+    toast('Grupo creado');
+  }
+  saveDb(); closeModal('modal-fg'); renderFormation(); renderFmDetail();
+}
+function deleteFmGroup(gid) {
+  const g=fmGetGroup(gid); if (!g) return;
+  if (!confirm('¿Eliminar el grupo "'+g.name+'"? Se eliminarán también sus inscripciones.')) return;
+  db.formation_groups=db.formation_groups.filter(g=>g.id!==gid);
+  db.formation_enrollments=db.formation_enrollments.filter(e=>e.groupId!==gid);
+  fmSelectedGroupId=null;
+  saveDb(); toast('Grupo eliminado'); renderFormation();
+}
+
+// ── ENROLL ────────────────────────────────────────────────────────────────
+let fmEnrollSelected=new Set();
+function openFormationEnrollModal() {
+  if (!fmSelectedGroupId) { toast('Selecciona un grupo primero','err'); return; }
+  openFormationEnrollModalForGroup(fmSelectedGroupId);
+}
+function openFormationEnrollModalForGroup(gid) {
+  if (!db.students.length){toast('La base de alumnos está vacía','err');return;}
+  const sel=document.getElementById('fm-enroll-grp-sel');
+  sel.innerHTML='<option value="">— Selecciona un grupo —</option>'+
+    (db.formation_groups||[]).map(g=>{
+      const p=fmGetPeriod(g.periodId);
+      return '<option value="'+g.id+'"'+(g.id===gid?' selected':'')+'>'+( p?p.name+' — ':'')+g.name+'</option>';
+    }).join('');
+  document.getElementById('fm-enroll-q').value='';
+  fmEnrollSelected=new Set(); renderFormationEnrollList(); openModal('modal-formation-enroll');
+}
+function renderFormationEnrollList() {
+  const q=(document.getElementById('fm-enroll-q').value||'').toLowerCase();
+  const gid=document.getElementById('fm-enroll-grp-sel').value;
+  const alreadyIn=gid?new Set(fmEnrolls(gid).map(e=>e.studentId)):new Set();
+  const filtered=db.students.filter(s=>{
+    const fn=fullName(s).toLowerCase();
+    return !q||fn.includes(q)||s.matricula.toLowerCase().includes(q);
+  });
+  document.getElementById('fm-enroll-list').innerHTML=filtered.map(s=>{
+    const fn=fullName(s);
+    const already=alreadyIn.has(s.id);
+    const sel=fmEnrollSelected.has(s.id);
+    const click=already?'':'onclick="fmToggleEnroll(\''+s.id+'\')"';
+    return '<div class="enroll-item'+(sel?' selected':'')+(already?' disabled-enroll':'')+'" '+click+'>'+
+      '<div class="enroll-check">'+(sel?'<svg width="10" height="10" fill="none" stroke="#fff" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>':'')+'</div>'+
+      '<div class="av av-sm" style="background:'+avCol(fn)+'18;color:'+avCol(fn)+'">'+inits(fn)+'</div>'+
+      '<div style="flex:1"><div class="sc-name">'+fn+'</div><div class="sc-sub">'+s.matricula+'</div></div>'+
+      (already?'<span class="enroll-already">Ya inscrito</span>':'')+
+    '</div>';
+  }).join('')||'<div class="empty"><p>Sin resultados</p></div>';
+  document.getElementById('fm-enroll-count').textContent=fmEnrollSelected.size?fmEnrollSelected.size+' seleccionado(s)':'';
+}
+function fmToggleEnroll(sid){if(fmEnrollSelected.has(sid))fmEnrollSelected.delete(sid);else fmEnrollSelected.add(sid);renderFormationEnrollList();}
+function confirmFormationEnroll() {
+  const gid=document.getElementById('fm-enroll-grp-sel').value;
+  if (!gid){toast('Selecciona un grupo','err');return;}
+  if (!fmEnrollSelected.size){toast('Selecciona al menos un alumno','err');return;}
+  let added=0;
+  fmEnrollSelected.forEach(sid=>{
+    if (!db.formation_enrollments.find(e=>e.studentId===sid&&e.groupId===gid)) {
+      db.formation_enrollments.push({studentId:sid,groupId:gid,paid:false,payDate:null,notes:''});
+      added++;
+    }
+  });
+  fmSelectedGroupId=gid;
+  saveDb(); closeModal('modal-formation-enroll'); toast(added+' alumno(s) agregado(s)');
+  renderFormation(); renderFmDetail();
+}
+
+// ── TEACHER DASHBOARD ─────────────────────────────────────────────────────
+function renderTeacherDashboard() {
+  const u = currentUser; if (!u) return;
+  const tid = u.teacherId;
+  const teacher = tid ? db.teachers.find(t=>t.id===tid) : null;
+  const tname = teacher?.name || u.username;
+  document.getElementById('td-title').textContent = 'Mis Grupos — ' + tname;
+
+  // Find groups assigned to this teacher
+  const myGroups = db.groups.filter(g =>
+    (tid && g.teacherId === tid) ||
+    (!tid && g.teacher?.toLowerCase() === tname.toLowerCase())
+  );
+
+  if (!myGroups.length) {
+    document.getElementById('td-sub').textContent = 'Sin grupos asignados';
+    document.getElementById('td-content').innerHTML =
+      '<div class="empty"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg><p>No tienes grupos asignados</p><small>Contacta al administrador para que te asigne grupos.</small></div>';
+    return;
+  }
+
+  // Group by period
+  const byPeriod = {};
+  myGroups.forEach(g => {
+    const p = getPeriod(g.periodId);
+    const key = g.periodId;
+    if (!byPeriod[key]) byPeriod[key] = {period:p, groups:[]};
+    byPeriod[key].groups.push(g);
+  });
+
+  const modalityLabel = {presencial:'🏫 Presencial', hibrido:'🔀 Híbrido', virtual:'💻 Virtual'};
+  const totalStudents = myGroups.reduce((acc,g)=>acc+groupEnrolls(g.id).length,0);
+  document.getElementById('td-sub').textContent = myGroups.length+' grupo(s) · '+totalStudents+' alumnos en total';
+
+  let html = '';
+  Object.values(byPeriod).sort((a,b)=>(b.period?.name||'').localeCompare(a.period?.name||'')).forEach(({period,groups})=>{
+    html += '<div class="periods-section"><div class="ps-header"><span class="ps-title">'+(period?.name||'Sin periodo')+'</span></div>';
+    html += '<div class="groups-grid">';
+    groups.forEach(g => {
+      const enrolls = groupEnrolls(g.id);
+      const grades = enrolls.map(e=>getFinal(e.studentId,g.periodId,g.id)).filter(v=>v!==null).map(Number);
+      const avg = grades.length ? (grades.reduce((a,b)=>a+b,0)/grades.length).toFixed(1) : '—';
+      const aprobados = grades.filter(f=>f>=70).length;
+      const pendientes = enrolls.length - grades.length;
+      const avgColor = avg==='—'?'var(--muted2)':parseFloat(avg)>=70?'var(--accent2)':'var(--danger)';
+      const schedChip = g.schedule?'<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(26,43,107,.07);border:1px solid rgba(26,43,107,.15);border-radius:8px;padding:4px 9px;font-size:11.5px;font-weight:700;color:var(--accent)">🕐 '+g.schedule+'</span>':'';
+      const modChip = g.modality?'<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:4px 9px;font-size:11.5px;font-weight:700;color:var(--muted)">'+modalityLabel[g.modality]+'</span>':'';
+      const lockBadge = isGroupLocked(g.id)?'<span style="font-size:11px;background:rgba(220,38,38,.08);color:var(--danger);border:1px solid rgba(220,38,38,.2);border-radius:99px;padding:3px 9px;font-weight:800">🔒 Bloqueado</span>':'';
+      const pendWarn = pendientes>0?'<div style="background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.2);border-radius:8px;padding:8px 11px;font-size:12px;font-weight:700;color:var(--warn);display:flex;align-items:center;gap:6px">⚠️ '+pendientes+' alumno'+(pendientes!==1?'s':'')+' sin calificar</div>':'';
+      html += '<div class="gc" style="background:var(--surface);border:2px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .15s,transform .15s"'+
+        ' onmouseenter="this.style.boxShadow=\'var(--shadow-lg)\';this.style.transform=\'translateY(-1px)\'"'+
+        ' onmouseleave="this.style.boxShadow=\'\';this.style.transform=\'\'"'+
+      '>'+
+        '<div style="background:linear-gradient(135deg,var(--accent),#22388a);padding:14px 16px;color:#fff">'+
+          (g.level?'<div style="font-size:10px;font-weight:900;opacity:.75;text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px">Nivel '+g.level+(g.subject?' · '+g.subject:'')+'</div>':'')+
+          '<div style="font-size:16px;font-weight:900;line-height:1.2">'+g.name+'</div>'+
+        '</div>'+
+        '<div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;flex:1">'+
+          (schedChip||modChip?'<div style="display:flex;flex-wrap:wrap;gap:6px">'+schedChip+modChip+lockBadge+'</div>':lockBadge?'<div>'+lockBadge+'</div>':'')+
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">'+
+            '<div style="background:var(--bg);border-radius:10px;padding:10px 6px">'+
+              '<div style="font-size:22px;font-weight:900;color:var(--accent);letter-spacing:-1px">'+enrolls.length+'</div>'+
+              '<div style="font-size:9.5px;font-weight:800;color:var(--muted);text-transform:uppercase;margin-top:2px">Alumnos</div>'+
+            '</div>'+
+            '<div style="background:var(--bg);border-radius:10px;padding:10px 6px">'+
+              '<div style="font-size:22px;font-weight:900;color:'+avgColor+';letter-spacing:-1px">'+avg+'</div>'+
+              '<div style="font-size:9.5px;font-weight:800;color:var(--muted);text-transform:uppercase;margin-top:2px">Promedio</div>'+
+            '</div>'+
+            '<div style="background:'+(pendientes>0?'rgba(217,119,6,.08)':'var(--bg)')+';border-radius:10px;padding:10px 6px">'+
+              '<div style="font-size:22px;font-weight:900;color:'+(pendientes>0?'var(--warn)':'var(--accent2)')+';letter-spacing:-1px">'+pendientes+'</div>'+
+              '<div style="font-size:9.5px;font-weight:800;color:var(--muted);text-transform:uppercase;margin-top:2px">Sin calif.</div>'+
+            '</div>'+
+          '</div>'+
+          pendWarn+
+        '</div>'+
+        '<div style="padding:0 16px 14px">'+
+          '<button class="btn btn-dark" style="width:100%;justify-content:center" onclick="openGradesForTeacher(\''+g.id+'\')">📝 Capturar calificaciones</button>'+
+        '</div>'+
+      '</div>';
+    });
+    html += '</div></div>';
+  });
+  document.getElementById('td-content').innerHTML = html;
+}
+
+function openGradesForTeacher(gid) {
+  // Navigate to periods page with this group selected
+  if (isAdmin()) {
+    selectedGroupId = gid;
+    const g = getGroup(gid);
+    if (g) selectedPeriodId = g.periodId;
+    nav(document.querySelector('.nav-item[data-p="periods"]'), 'periods');
+  } else {
+    // For teachers, open the student list inline
+    selectedGroupId = gid;
+    const g = getGroup(gid);
+    if (g) selectedPeriodId = g.periodId;
+    // Show a simplified grade capture view
+    renderTeacherGradeCapture(gid);
+  }
+}
+
+function renderTeacherGradeCapture(gid) {
+  const g = getGroup(gid); if (!g) return;
+  const p = getPeriod(g.periodId);
+  const enrolls = groupEnrolls(gid);
+  const locked = isGroupLocked(gid);
+
+  const rows = enrolls.map(e => {
+    const s = getStudent(e.studentId); if (!s) return '';
+    const fn = fullName(s);
+    const f = getFinal(s.id, g.periodId, gid);
+    const fColor = f===null?'var(--muted)':parseFloat(f)>=70?'var(--accent2)':'var(--danger)';
+    return '<div class="pe-student-row">'+
+      '<div class="av av-sm" style="background:'+avCol(fn)+'18;color:'+avCol(fn)+'">'+inits(fn)+'</div>'+
+      '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">'+fn+'</div><div style="font-size:11px;color:var(--muted)">'+s.matricula+'</div></div>'+
+      '<div style="font-size:16px;font-weight:900;color:'+fColor+';min-width:36px;text-align:right">'+(f!==null?f:'—')+'</div>'+
+      (!locked?'<button class="btn btn-out" style="padding:3px 8px;font-size:11px;margin-left:6px" onclick="openGradesModalFromRoster(\''+s.id+'\',\''+g.periodId+'\',\''+gid+'\')">'+(f!==null?'✎':'+ Nota')+'</button>':'')+
+    '</div>';
+  }).filter(Boolean).join('');
+
+  document.getElementById('td-content').innerHTML =
+    '<button class="btn btn-out btn-sm" onclick="renderTeacherDashboard()" style="margin-bottom:16px">← Volver a mis grupos</button>'+
+    '<div class="step-card">'+
+      '<div class="pe-detail-header" style="margin-bottom:16px">'+
+        '<div class="pe-detail-name">'+g.name+(locked?' 🔒':'')+'</div>'+
+        '<div class="pe-detail-meta">'+g.teacher+(g.subject?' · '+g.subject:'')+(p?' · '+p.name:'')+'</div>'+
+      '</div>'+
+      (locked?'<div style="background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.2);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:700;color:var(--danger)">🔒 Las calificaciones de este grupo están bloqueadas por el administrador.</div>':'')+
+      '<div style="font-weight:800;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Lista de alumnos ('+enrolls.length+')</div>'+
+      (rows||'<div style="color:var(--muted);text-align:center;padding:20px">Sin alumnos inscritos</div>')+
+    '</div>';
+}
+
+// ── PORTAL SETTINGS ───────────────────────────────────────────────────────
+function openPortalSettings() {
+  if (!db.portalSettings) db.portalSettings={};
+  document.getElementById('ps-title').value=db.portalSettings.title||'';
+  document.getElementById('ps-notice').value=db.portalSettings.notice||'';
+  document.getElementById('ps-ref-url').value=db.portalSettings.refUrl||'';
+  openModal('modal-portal-settings');
+}
+function savePortalSettings() {
+  if (!db.portalSettings) db.portalSettings={};
+  db.portalSettings.title=document.getElementById('ps-title').value.trim();
+  db.portalSettings.notice=document.getElementById('ps-notice').value.trim();
+  db.portalSettings.refUrl=document.getElementById('ps-ref-url').value.trim();
+  saveDb(); toast('Configuración del portal guardada'); closeModal('modal-portal-settings');
+}
+
+// ── ACADEMIC STATUS ───────────────────────────────────────────────────────
+function openAcademicStatus(sid) {
+  const s=getStudent(sid); if(!s) return;
+  document.getElementById('as-student-id').value=sid;
+  document.getElementById('as-title').textContent='🎓 Estatus — '+fullName(s);
+  const as=s.academicStatus||{};
+  document.getElementById('as-placement-level').value=as.placementLevel||'';
+  document.getElementById('as-placement-date').value=as.placementDate||'';
+  document.getElementById('as-placement-notes').value=as.placementNotes||'';
+  document.getElementById('as-native-lang').checked=!!as.nativeLang;
+  document.getElementById('as-native-lang-name').value=as.nativeLangName||'';
+  document.getElementById('as-native-lang-date').value=as.nativeLangDate||'';
+  document.getElementById('as-native-lang-notes').value=as.nativeLangNotes||'';
+  document.getElementById('as-cert').checked=!!as.cert;
+  document.getElementById('as-cert-type').value=as.certType||'';
+  document.getElementById('as-cert-date').value=as.certDate||'';
+  document.getElementById('as-cert-notes').value=as.certNotes||'';
+  document.getElementById('as-intensive').checked=!!as.intensive;
+  document.getElementById('as-intensive-period').value=as.intensivePeriod||'';
+  document.getElementById('as-intensive-level').value=as.intensiveLevel||'';
+  document.getElementById('as-intensive-notes').value=as.intensiveNotes||'';
+  openModal('modal-academic-status');
+}
+function saveAcademicStatus() {
+  const sid=document.getElementById('as-student-id').value;
+  const s=getStudent(sid); if(!s) return;
+  s.academicStatus={
+    placementLevel: document.getElementById('as-placement-level').value,
+    placementDate:  document.getElementById('as-placement-date').value,
+    placementNotes: document.getElementById('as-placement-notes').value.trim(),
+    nativeLang:     document.getElementById('as-native-lang').checked,
+    nativeLangName: document.getElementById('as-native-lang-name').value.trim(),
+    nativeLangDate: document.getElementById('as-native-lang-date').value,
+    nativeLangNotes:document.getElementById('as-native-lang-notes').value.trim(),
+    cert:           document.getElementById('as-cert').checked,
+    certType:       document.getElementById('as-cert-type').value.trim(),
+    certDate:       document.getElementById('as-cert-date').value,
+    certNotes:      document.getElementById('as-cert-notes').value.trim(),
+    intensive:      document.getElementById('as-intensive').checked,
+    intensivePeriod:document.getElementById('as-intensive-period').value.trim(),
+    intensiveLevel: document.getElementById('as-intensive-level').value,
+    intensiveNotes: document.getElementById('as-intensive-notes').value.trim(),
+  };
+  saveDb(); toast('Estatus académico guardado'); closeModal('modal-academic-status');
+  renderRoster();
+}
+
+// INIT
+const _auth=loadAuth();
+if (!_auth.users.length) {
+  document.getElementById('login-user').placeholder='admin';
+  document.getElementById('login-pass').placeholder='admin123';
+}
+
+// Everything waits for Firebase to be ready
+window.addEventListener('fb-ready', async () => {
+  setSyncStatus('syncing');
+
+  // Show cloud hint
+  const hint = document.getElementById('login-cloud-hint');
+  if (hint) { hint.style.display='block'; setTimeout(()=>{ hint.style.display='none'; }, 2500); }
+
+  // Try restore session — check Firebase Auth state first
+  try {
+    const saved = sessionStorage.getItem('cle_session');
+    if (saved) {
+      // Firebase Auth session is still active
+      const savedUser = JSON.parse(saved);
+      let auth;
+      try { auth = await syncAuthFromCloud(); } catch(e) { auth = loadAuth(); }
+      const valid = auth.users.find(u => u.username.toLowerCase() === savedUser.username.toLowerCase());
+      if (valid) {
+        currentUser = valid;
+        document.getElementById('login-overlay').style.display = 'none';
+        await loadDbFromCloud();
+        applyRoleUI();
+        if (isAdmin()) renderDashboard();
+        else {
+          const tdNav = document.querySelector('.nav-item[data-p="teacher-dashboard"]');
+          if (tdNav) nav(tdNav, 'teacher-dashboard');
+          else renderDashboard();
+        }
+        return;
+      }
+    }
+  } catch(e) { console.warn('Session restore failed:', e); }
+
+  // No valid session — sign out Firebase Auth and show login
+  document.getElementById('login-overlay').style.display = 'flex';
+});
+</script>
+
+<script>
+window.afterGoogleLogin = function(){};
+
+async function googleLogin(){
+  try{
+    await signInWithPopup(
+      window._fbAuthObj,
+      window._fbProvider
+    );
+  }catch(err){
+    console.error(err);
+    alert('No fue posible iniciar sesión.');
+  }
+}
+
+async function doLogout(){
+  try{
+    await signOut(window._fbAuthObj);
+    location.reload();
+  }catch(err){
+    console.error(err);
+  }
+}
+</script>
+
+</body>
+</html>
