@@ -2241,33 +2241,7 @@ function exportGroupPDF(gid) {
   <script>window.onload=()=>{window.print();}<\/script>
   
 
-<script>
-window.afterGoogleLogin = function(){};
-
-async function googleLogin(){
-  try{
-    await window.signInWithPopup(
-      window._fbAuthObj,
-      window._fbProvider
-    );
-  }catch(err){
-    console.error(err);
-    alert('No fue posible iniciar sesión.');
-  }
-}
-
-async function doLogout(){
-  try{
-    await window.signOut(window._fbAuthObj);
-    location.reload();
-  }catch(err){
-    console.error(err);
-  }
-}
-</script>
-
-</body>
-</html>`;
+</body></html>`;
   const win=window.open('','_blank','width=900,height=700');
   win.document.write(pdfHtml);
   win.document.close();
