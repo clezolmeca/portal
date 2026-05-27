@@ -3144,18 +3144,20 @@ window.addEventListener('fb-ready', async () => {
 
 
 <script>
-window.afterGoogleLogin = async function(){
+window.afterGoogleLogin = async function(user){
   try{
+
+    window.currentUser = {
+      username: user.email,
+      role: 'admin',
+      teacherId: null
+    };
+
     await loadDbFromCloud();
+
     applyRoleUI();
 
-    if (isAdmin()) {
-      renderDashboard();
-    } else {
-      const tdNav = document.querySelector('.nav-item[data-p="teacher-dashboard"]');
-      if (tdNav) nav(tdNav, 'teacher-dashboard');
-      else renderDashboard();
-    }
+    renderDashboard();
 
   }catch(err){
     console.error('Error loading cloud database after login:', err);
